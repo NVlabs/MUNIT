@@ -7,10 +7,7 @@ from __future__ import print_function
 from utils import get_config, get_data_loader_folder
 from trainer import MUNIT_Trainer
 from optparse import OptionParser
-from torchvision import transforms
-from data import ImageFolder
 from torch.autograd import Variable
-from torch.utils.data import DataLoader
 import torchvision.utils as vutils
 import sys
 import torch
