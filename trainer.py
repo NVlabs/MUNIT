@@ -1,5 +1,5 @@
 """
-Copyright (C) 2018 NVIDIA Corporation.  All rights reserved.
+Copyright (C) 2017 NVIDIA Corporation.  All rights reserved.
 Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode).
 """
 from networks import AdaINGen, MsImageDis
@@ -39,6 +39,8 @@ class MUNIT_Trainer(nn.Module):
 
         # Network weight initialization
         self.apply(weights_init(hyperparameters['init']))
+        self.dis_a.apply(weights_init('gaussian'))
+        self.dis_b.apply(weights_init('gaussian'))
 
         # Load VGG model if needed
         if 'vgg_w' in hyperparameters.keys() and hyperparameters['vgg_w'] > 0:
@@ -80,8 +82,8 @@ class MUNIT_Trainer(nn.Module):
         c_b_recon, s_a_recon = self.gen_a.encode(x_ba)
         c_a_recon, s_b_recon = self.gen_b.encode(x_ab)
         # decode again (if needed)
-        x_aba = self.gen_a.decode(c_a_recon, s_a_prime) if hyperparameters['recon_x_a_cyc_w'] > 0 else None
-        x_bab = self.gen_b.decode(c_b_recon, s_b_prime) if hyperparameters['recon_x_b_cyc_w'] > 0 else None
+        x_aba = self.gen_a.decode(c_a_recon, s_a_prime) if hyperparameters['recon_x_cyc_w'] > 0 else None
+        x_bab = self.gen_b.decode(c_b_recon, s_b_prime) if hyperparameters['recon_x_cyc_w'] > 0 else None
 
         # reconstruction loss
         self.loss_gen_recon_x_a = self.recon_criterion(x_a_recon, x_a)
@@ -90,8 +92,8 @@ class MUNIT_Trainer(nn.Module):
         self.loss_gen_recon_s_b = self.recon_criterion(s_b_recon, s_b)
         self.loss_gen_recon_c_a = self.recon_criterion(c_a_recon, c_a)
         self.loss_gen_recon_c_b = self.recon_criterion(c_b_recon, c_b)
-        self.loss_gen_cycrecon_x_a = self.recon_criterion(x_aba, x_a) if hyperparameters['recon_x_a_cyc_w'] > 0 else 0
-        self.loss_gen_cycrecon_x_b = self.recon_criterion(x_bab, x_b) if hyperparameters['recon_x_b_cyc_w'] > 0 else 0
+        self.loss_gen_cycrecon_x_a = self.recon_criterion(x_aba, x_a) if hyperparameters['recon_x_cyc_w'] > 0 else 0
+        self.loss_gen_cycrecon_x_b = self.recon_criterion(x_bab, x_b) if hyperparameters['recon_x_cyc_w'] > 0 else 0
         # GAN loss
         self.loss_gen_adv_a = self.dis_a.calc_gen_loss(x_ba)
         self.loss_gen_adv_b = self.dis_b.calc_gen_loss(x_ab)
@@ -101,14 +103,14 @@ class MUNIT_Trainer(nn.Module):
         # total loss
         self.loss_gen_total = hyperparameters['gan_w'] * self.loss_gen_adv_a + \
                               hyperparameters['gan_w'] * self.loss_gen_adv_b + \
-                              hyperparameters['recon_x_a_w'] * self.loss_gen_recon_x_a + \
-                              hyperparameters['recon_s_a_w'] * self.loss_gen_recon_s_a + \
+                              hyperparameters['recon_x_w'] * self.loss_gen_recon_x_a + \
+                              hyperparameters['recon_s_w'] * self.loss_gen_recon_s_a + \
                               hyperparameters['recon_c_w'] * self.loss_gen_recon_c_a + \
-                              hyperparameters['recon_x_b_w'] * self.loss_gen_recon_x_b + \
-                              hyperparameters['recon_s_b_w'] * self.loss_gen_recon_s_b + \
+                              hyperparameters['recon_x_w'] * self.loss_gen_recon_x_b + \
+                              hyperparameters['recon_s_w'] * self.loss_gen_recon_s_b + \
                               hyperparameters['recon_c_w'] * self.loss_gen_recon_c_b + \
-                              hyperparameters['recon_x_a_cyc_w'] * self.loss_gen_adv_a + \
-                              hyperparameters['recon_x_b_cyc_w'] * self.loss_gen_adv_b + \
+                              hyperparameters['recon_x_cyc_w'] * self.loss_gen_cycrecon_x_a + \
+                              hyperparameters['recon_x_cyc_w'] * self.loss_gen_cycrecon_x_b + \
                               hyperparameters['vgg_w'] * self.loss_gen_vgg_a + \
                               hyperparameters['vgg_w'] * self.loss_gen_vgg_b
         self.loss_gen_total.backward()

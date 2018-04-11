@@ -52,9 +52,9 @@ num_workers: 8                              # number of data loading threads
 new_size: 256                               # first resize the shortest image side to this size
 crop_image_height: 256                      # random crop image of this height
 crop_image_width: 256                       # random crop image of this width
-root_a: /cosmo/datasets/edges2shoes/        # dataset folder location
-train_list_a: trainA.txt                    # image list
-test_list_a: testA.txt                      # image list
-root_b: /cosmo/datasets/edges2shoes/        # dataset folder location
-train_list_b: trainB.txt                    # image list
-test_list_b: testB.txt                      # image list
+root_a: /cosmo/datasets/animal_portraits/        # dataset folder location
+train_list_a: all_4_bigcats_train.txt                    # image list
+test_list_a: all_4_bigcats_test.txt                      # image list
+root_b: /cosmo/datasets/animal_portraits/        # dataset folder location
+train_list_b: all_4_dogs_train_2.txt                    # image list
+test_list_b: all_4_dogs_test.txt                      # image list

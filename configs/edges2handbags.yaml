@@ -25,6 +25,7 @@ recon_s_w: 1                  # weight of style reconstruction loss
 recon_c_w: 1                  # weight of content reconstruction loss
 recon_x_cyc_w: 0              # weight of explicit style augmented cycle consistency loss
 vgg_w: 0                      # weight of domain-invariant perceptual loss
+init_dis: 0
 
 # model options
 gen:
@@ -52,9 +53,9 @@ num_workers: 8                              # number of data loading threads
 new_size: 256                               # first resize the shortest image side to this size
 crop_image_height: 256                      # random crop image of this height
 crop_image_width: 256                       # random crop image of this width
-root_a: /cosmo/datasets/edges2shoes/        # dataset folder location
+root_a: /cosmo/datasets/edges2handbags/        # dataset folder location
 train_list_a: trainA.txt                    # image list
 test_list_a: testA.txt                      # image list
-root_b: /cosmo/datasets/edges2shoes/        # dataset folder location
+root_b: /cosmo/datasets/edges2handbags/        # dataset folder location
 train_list_b: trainB.txt                    # image list
 test_list_b: testB.txt                      # image list

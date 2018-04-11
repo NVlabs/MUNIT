@@ -1,5 +1,5 @@
 """
-Copyright (C) 2018 NVIDIA Corporation.  All rights reserved.
+Copyright (C) 2017 NVIDIA Corporation.  All rights reserved.
 Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode).
 """
 from torch.utils.serialization import load_lua
@@ -24,13 +24,13 @@ def get_all_data_loaders(conf):
     height = conf['crop_image_height']
     width = conf['crop_image_width']
     train_loader_a = get_data_loader_list(conf['root_a'], conf['train_list_a'], batch_size, True,
-                                          conf['input_dim_a'] == 1, new_size, height, width, num_workers)
+                                          conf['input_dim_a'] == 1, new_size, height, width, num_workers, True)
     test_loader_a = get_data_loader_list(conf['root_a'], conf['test_list_a'], batch_size, False,
-                                         conf['input_dim_a'] == 1, new_size, height, width, num_workers)
+                                         conf['input_dim_a'] == 1, new_size, new_size, new_size, num_workers, True)
     train_loader_b = get_data_loader_list(conf['root_b'], conf['train_list_b'], batch_size, True,
-                                          conf['input_dim_b'] == 1, new_size, height, width, num_workers)
+                                          conf['input_dim_b'] == 1, new_size, height, width, num_workers, True)
     test_loader_b = get_data_loader_list(conf['root_b'], conf['test_list_b'], batch_size, False,
-                                         conf['input_dim_b'] == 1, new_size, height, width, num_workers)
+                                         conf['input_dim_b'] == 1, new_size, new_size, new_size, num_workers, True)
     return train_loader_a, train_loader_b, test_loader_a, test_loader_b
 
 def get_data_loader_list(root, file_list, batch_size, train, gray_scale, new_size=256,
@@ -62,14 +62,8 @@ def get_data_loader_folder(input_folder, batch_size, train, gray_scale, new_size
     return loader
 
 def get_config(config):
-    # type: (str) -> dict
-    stream = open(config, 'r')
-    docs = yaml.load_all(stream)
-    for doc in docs:
-        for k, v in doc.items():
-            if k == "train":
-                return v
-    stream.close()
+    with open(config, 'r') as stream:
+        return yaml.load(stream)
 
 def eformat(f, prec):
     s = "%.*e"%(prec, f)
@@ -147,10 +141,9 @@ def write_loss(iterations, trainer, train_writer):
 def slerp(val, low, high):
     """
     original: Animating Rotation with Quaternion Curves, Ken Shoemake
-
     https://arxiv.org/abs/1609.04468
     Code: https://github.com/soumith/dcgan.torch/issues/14, Tom White
-    '"""
+    """
     omega = np.arccos(np.dot(low / np.linalg.norm(low), high / np.linalg.norm(high)))
     so = np.sin(omega)
     return np.sin((1.0 - val) * omega) / so * low + np.sin(val * omega) / so * high
@@ -158,9 +151,8 @@ def slerp(val, low, high):
 def get_slerp_interp(nb_latents, nb_interp, z_dim):
     """
     modified from: PyTorch inference for "Progressive Growing of GANs" with CelebA snapshot
-
     https://github.com/ptrblck/prog_gans_pytorch_inference
-    '"""
+    """
 
     latent_interps = np.empty(shape=(0, z_dim), dtype=np.float32)
     for _ in range(nb_latents):
@@ -240,14 +232,7 @@ def weights_init(init_type='gaussian'):
                 pass
             else:
                 assert 0, "Unsupported initialization: {}".format(init_type)
+            if hasattr(m, 'bias') and m.bias is not None:
+                init.constant(m.bias.data, 0.0)
 
     return init_fun
-
-def instancenorm(x):
-    n = x.size(2) * x.size(3)
-    t = x.view(x.size(0), x.size(1), n)
-    mean = torch.mean(t, dim=2).unsqueeze(2).unsqueeze(2).expand_as(x)
-    # Calculate the biased var. torch.var returns unbiased var
-    var = torch.var(t, dim=2).unsqueeze(2).unsqueeze(2).expand_as(x) * ((n - 1) / float(n))
-    out = (x - mean) / torch.sqrt(var + 1e-9)
-    return out

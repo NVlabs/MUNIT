@@ -1,8 +1,7 @@
 """
-Copyright (C) 2018 NVIDIA Corporation.  All rights reserved.
+Copyright (C) 2017 NVIDIA Corporation.  All rights reserved.
 Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode).
 """
-
 from torch import nn
 from torch.autograd import Variable
 import torch
@@ -92,28 +91,24 @@ class AdaINGen(nn.Module):
         n_downsample = params['n_downsample']
         n_res = params['n_res']
         activ = params['activ']
-        style_norm = params['style_norm']
         pad_type = params['pad_type']
-        downsample_style = params['downsample_style']
         mlp_dim = params['mlp_dim']
+        upsample_norm = params['upsample_norm']
 
         # style encoder
-        self.enc_style = StyleEncoder(4, input_dim, dim, style_dim, norm=style_norm, activ=activ, downsample=downsample_style)
+        self.enc_style = StyleEncoder(4, input_dim, dim, style_dim, norm='none', activ=activ)
 
         # content encoder
         self.enc_content = ContentEncoder(n_downsample, n_res, input_dim, dim, 'in', 'relu', pad_type=pad_type)
-        self.dec = Decoder(n_downsample, n_res, self.enc_content.output_dim, input_dim, activ='relu', pad_type=pad_type)
+        self.dec = Decoder(n_downsample, n_res, self.enc_content.output_dim, input_dim, activ='relu', pad_type=pad_type, upsample_norm=upsample_norm)
 
-        # style decoder
-        self.mlp = MLP(style_dim, self.get_num_adain_params(self.dec), mlp_dim, 3, style_norm, activ)
+        # MLP to generate AdaIN parameters
+        self.mlp = MLP(style_dim, self.get_num_adain_params(self.dec), mlp_dim, 3, norm='none', activ=activ)
 
     def forward(self, images):
         # reconstruct an image
-        style_fake = self.enc_style(images)
-        content = self.enc_content(images)
-        adain_params = self.mlp(style_fake)
-        self.assign_adain_params(adain_params, self.dec)
-        images_recon = self.dec(content)
+        content, style_fake = self.encode(images)
+        images_recon = self.decode(content, style_fake)
         return images_recon
 
     def encode(self, images):
@@ -134,8 +129,7 @@ class AdaINGen(nn.Module):
         for m in model.modules():
             if m.__class__.__name__ == "AdaptiveInstanceNorm2d":
                 mean = adain_params[:, :m.num_features]
-                logvar = adain_params[:, m.num_features:2*m.num_features]
-                std = logvar.mul(0.5).exp()
+                std = adain_params[:, m.num_features:2*m.num_features]
                 m.bias = mean.contiguous().view(-1)
                 m.weight = std.contiguous().view(-1)
                 if adain_params.size(1) > 2*m.num_features:
@@ -154,16 +148,15 @@ class AdaINGen(nn.Module):
 ##################################################################################
 
 class StyleEncoder(nn.Module):
-    def __init__(self, n_downsample, input_dim, dim, style_dim, norm, activ, downsample=False):
+    def __init__(self, n_downsample, input_dim, dim, style_dim, norm, activ):
         super(StyleEncoder, self).__init__()
         self.model = []
-        if downsample:
-            self.enc_style += [nn.AdaptiveAvgPool2d((256, 256))]
         self.model += [Conv2dBlock(input_dim, dim, 7, 1, 3, norm=norm, activation=activ, pad_type='reflect')]
-        for i in range(n_downsample - 2):
+        for i in range(2):
             self.model += [Conv2dBlock(dim, 2 * dim, 4, 2, 1, norm=norm, activation=activ, pad_type='reflect')]
             dim *= 2
-        self.model += [Conv2dBlock(dim, dim, 4, 2, 1, norm=norm, activation=activ, pad_type='reflect')]
+        for i in range(n_downsample - 2):
+            self.model += [Conv2dBlock(dim, dim, 4, 2, 1, norm=norm, activation=activ, pad_type='reflect')]
         self.model += [nn.AdaptiveAvgPool2d(1)] # global average pooling
         self.model += [nn.Conv2d(dim, style_dim, 1, 1, 0)]
         self.model = nn.Sequential(*self.model)
@@ -190,7 +183,7 @@ class ContentEncoder(nn.Module):
         return self.model(x)
 
 class Decoder(nn.Module):
-    def __init__(self, n_upsample, n_res, dim, output_dim, activ='relu', pad_type='zero'):
+    def __init__(self, n_upsample, n_res, dim, output_dim, activ='relu', pad_type='zero', upsample_norm='ln'):
         super(Decoder, self).__init__()
 
         self.model = []
@@ -199,7 +192,7 @@ class Decoder(nn.Module):
         # upsampling blocks
         for i in range(n_upsample):
             self.model += [nn.Upsample(scale_factor=2),
-                           Conv2dBlock(dim, dim // 2, 5, 1, 2, norm='ln', activation=activ, pad_type='reflect')]
+                           Conv2dBlock(dim, dim // 2, 5, 1, 2, norm=upsample_norm, activation=activ, pad_type='reflect')]
             dim //= 2
         # use reflection padding in the last conv layer
         self.model += [Conv2dBlock(dim, output_dim, 7, 1, 3, norm='none', activation='tanh', pad_type='reflect')]
@@ -223,7 +216,7 @@ class ResBlocks(nn.Module):
         return self.model(x)
 
 class MLP(nn.Module):
-    def __init__(self, input_dim, output_dim, dim, n_blk, norm, activ):
+    def __init__(self, input_dim, output_dim, dim, n_blk, norm='none', activ='relu'):
 
         super(MLP, self).__init__()
         self.model = []
@@ -256,10 +249,9 @@ class ResBlock(nn.Module):
 
 class Conv2dBlock(nn.Module):
     def __init__(self, input_dim ,output_dim, kernel_size, stride,
-                 padding=0, norm='none', activation='relu', pad_type='zero', preact=False):
+                 padding=0, norm='none', activation='relu', pad_type='zero'):
         super(Conv2dBlock, self).__init__()
         self.use_bias = True
-        self.preact = preact
         # initialize padding
         if pad_type == 'reflect':
             self.pad = nn.ReflectionPad2d(padding)
@@ -269,7 +261,7 @@ class Conv2dBlock(nn.Module):
             assert 0, "Unsupported padding type: {}".format(pad_type)
 
         # initialize normalization
-        norm_dim = input_dim if preact else output_dim
+        norm_dim = output_dim
         if norm == 'bn':
             self.norm = nn.BatchNorm2d(norm_dim)
         elif norm == 'in':
@@ -303,14 +295,11 @@ class Conv2dBlock(nn.Module):
         self.conv = nn.Conv2d(input_dim, output_dim, kernel_size, stride, bias=self.use_bias)
 
     def forward(self, x):
-        if not self.preact:
-            x = self.conv(self.pad(x))
+        x = self.conv(self.pad(x))
         if self.norm:
             x = self.norm(x)
         if self.activation:
             x = self.activation(x)
-        if self.preact:
-            x = self.conv(self.pad(x))
         return x
 
 class LinearBlock(nn.Module):
@@ -342,6 +331,8 @@ class LinearBlock(nn.Module):
             self.activation = nn.PReLU()
         elif activation == 'selu':
             self.activation = nn.SELU(inplace=True)
+        elif activation == 'tanh':
+            self.activation = nn.Tanh()
         elif activation == 'none':
             self.activation = None
         else:
