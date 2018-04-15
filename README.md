@@ -14,29 +14,27 @@ Please check out the [user manual page](USAGE.md).
 [Xun Huang](http://www.cs.cornell.edu/~xhuang/), [Ming-Yu Liu](http://mingyuliu.net/), [Serge Belongie](https://vision.cornell.edu/se3/people/serge-belongie/), [Jan Kautz](http://jankautz.com/), [Multimodal Unsupervised Image-to-Image Translation]()
 
 #### Results Video
-[![](./docs/two-minute-paper.png)](https://youtu.be/ab64TWzWn40)
-
-[![IMAGE ALT TEXT](http://img.youtube.com/vi/ab64TWzWn40/1.jpg)](http://www.youtube.com/watch?v=ab64TWzWn40&feature=youtu.be "Multimodal UNsupervised Image-to-image Translation Networks")
+[![](results/video.jpg)](https://youtu.be/ab64TWzWn40 "Multimodal UNsupervised Image-to-image Translation Networks")
 
 #### Edges to Shoes/handbags Translation
 
-![](./results/edges2shoes_handbags.jpg)
+![](results/edges2shoes_handbags.jpg)
 
 #### Animal Image Translation
 
-![](./results/animal.jpg)
+![](results/animal.jpg)
 
 #### Street Scene Translation
 
-![](./results/street.jpg)
+![](results/street.jpg)
 
 #### Yosemite Summer to Winter Translation (HD)
 
-![](./results/summer2winter_yosemite.jpg)
+![](results/summer2winter_yosemite.jpg)
 
 #### Example-guided Image Translation
 
-![](./results/example_guided.jpg)
+![](results/example_guided.jpg)
 
 
 
