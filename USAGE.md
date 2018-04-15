@@ -31,7 +31,7 @@ We also provide a [Dockerfile](Dockerfile) for building an environment for runni
 
 #### Testing 
 
-First, download the [pretrained models](https://drive.google.com/open?id=0BwpOatrZwxK6V1Bwai1GZFQ2Q0k) and put them in `models` folder.
+First, download the [pretrained models](https://drive.google.com/drive/folders/10IEa7gibOWmQQuJUIUOkh-CV4cm6k8__?usp=sharing) and put them in `models` folder.
 
 ###### Multimodal Translation
 
