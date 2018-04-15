@@ -31,7 +31,7 @@ Please check out the [user manual page](USAGE.md).
 
 #### Example-guided Image Translation
 
-![](./results/example_guided.png)
+![](./results/example_guided.jpg)
 
 
 
