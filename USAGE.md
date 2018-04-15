@@ -35,42 +35,31 @@ First, download the [pretrained models](https://drive.google.com/open?id=0BwpOat
 
 ###### Multimodal Translation
 
-Run the following command to translate house cat to dog
+Run the following command to translate edges to shoes
     
-    python test.py --config configs/housecat2dog.yaml --input inputs/housecat.jpg --output_folder outputs --checkpoint models/housecat2dog.pt --a2b 1
+    python test.py --config configs/edges2shoes.yaml --input inputs/edge01.jpg --output_folder outputs --checkpoint models/edges2shoes.pt --a2b 1
     
 or vice versa
     
-    python test.py --config configs/housecat2dog.yaml --input inputs/dog.jpg --output_folder outputs --checkpoint models/housecat2dog.pt --a2b 0
+    python test.py --config configs/edges2shoes.yaml --input inputs/shoe.jpg --output_folder outputs --checkpoint models/edges2shoes.pt --a2b 0
 
 The results are stored in `outputs` folder. By default, it produces 10 random translation outputs.
  
 ###### Example-guided Translation
 
-The above command translates a cat into random dogs. In addition, it is possible to translate a cat to the style of a specific dog. For example, the following command produces an output image that combines the pose of `inputs/housecat.jpg` and the style of `inputs/dog.jpg`.
+The above command outputs diverse shoes from an edge input. In addition, it is possible to control the style of output using an example shoe image.
     
-    python test.py --config configs/housecat2dog.yaml --input inputs/housecat.jpg --output_folder outputs --checkpoint models/housecat2dog.pt --a2b 1 --style inputs/dog.jpg
+    python test.py --config configs/edges2shoes.yaml --input inputs/edge01.jpg --output_folder outputs --checkpoint models/edges2shoes.pt --a2b 1 --style inputs/shoe.jpg
 
  
 #### Training
-1. Download the aligned and crop version of the [CelebA dataset](http://mmlab.ie.cuhk.edu.hk/projects/CelebA.html) to <datasets/celeba>. 
+1. Download the dataset you want to use. For example, you can use the edges2shoes dataset provided by [Zhu et al.](https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix)
 
-2. Go to <datasets/celeba> and crop the middle region of the face images and resize them to 128x128
-    ```
-    python crop_and_resize.py;
-    ```
+3. Setup the yaml file. Check out `configs/edges2shoes.yaml`. Change the `data_root` field to the path of your downloaded dataset.
 
-3. Setup the yaml file. Check out <exps/unit/blondhair.yaml>
-
-4. Go to <src> and do training
+3. Start training
      ```
-    python cocogan_train.py --config ../exps/unit/blondhair.yaml --log ../logs
-    ```
-5. Go to <src> and do resume training 
-     ```
-    python cocogan_train.py --config ../exps/unit/blondhair.yaml --log ../logs --resume 1
+    python train.py --config configs/edges2shoes.yaml
     ```
     
-6. Intermediate image outputs and model binary files are in <outputs/unit/blondhair>
-
-For more pretrained models, please check out the google drive folder [Pretrained models](https://drive.google.com/open?id=0BwpOatrZwxK6UGtheHgta1F5d28).
+4. Intermediate image outputs and model binary files are stored in `outputs/edges2shoes`
