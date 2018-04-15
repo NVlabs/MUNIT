@@ -38,10 +38,6 @@ First, download the [pretrained models](https://drive.google.com/drive/folders/1
 Run the following command to translate edges to shoes
     
     python test.py --config configs/edges2shoes.yaml --input inputs/edge.jpg --output_folder outputs --checkpoint models/edges2shoes.pt --a2b 1
-    
-or vice versa
-    
-    python test.py --config configs/edges2shoes.yaml --input inputs/shoe.jpg --output_folder outputs --checkpoint models/edges2shoes.pt --a2b 0
 
 The results are stored in `outputs` folder. By default, it produces 10 random translation outputs.
  
