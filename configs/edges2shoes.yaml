@@ -2,10 +2,10 @@
 # Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode).
 
 # logger options
-image_save_iter: 1000           # How often do you want to save output images during training
-image_display_iter: 100        # How often do you want to display output images during training
+image_save_iter: 1000         # How often do you want to save output images during training
+image_display_iter: 100       # How often do you want to display output images during training
 display_size: 8               # How many images do you want to display each time
-snapshot_save_iter: 10000        # How often do you want to save trained models
+snapshot_save_iter: 10000     # How often do you want to save trained models
 log_iter: 1                   # How often do you want to log the training stats
 
 # optimization options
@@ -32,10 +32,9 @@ gen:
   mlp_dim: 256                # number of filters in MLP
   style_dim: 8                # length of style code
   activ: relu                 # activation function [relu/lrelu/prelu/selu/tanh]
-  upsample_norm: ln
   n_downsample: 2             # number of downsampling layers in content encoder
   n_res: 4                    # number of residual blocks in content encoder/decoder
-  pad_type: zero              # padding type [zero/reflect]
+  pad_type: reflect           # padding type [zero/reflect]
 dis:
   dim: 64                     # number of filters in the bottommost layer
   norm: none                  # normalization layer [none/bn/in/ln]
@@ -43,7 +42,7 @@ dis:
   n_layer: 4                  # number of layers in D
   gan_type: lsgan             # GAN loss [lsgan/nsgan]
   num_scales: 3               # number of scales
-  pad_type: zero              # padding type [zero/reflect]
+  pad_type: reflect           # padding type [zero/reflect]
 
 # data options
 input_dim_a: 3                              # number of image channels [1/3]
@@ -52,9 +51,4 @@ num_workers: 8                              # number of data loading threads
 new_size: 256                               # first resize the shortest image side to this size
 crop_image_height: 256                      # random crop image of this height
 crop_image_width: 256                       # random crop image of this width
-root_a: /cosmo/datasets/edges2shoes/        # dataset folder location
-train_list_a: trainA.txt                    # image list
-test_list_a: testA.txt                      # image list
-root_b: /cosmo/datasets/edges2shoes/        # dataset folder location
-train_list_b: trainB.txt                    # image list
-test_list_b: testB.txt                      # image list
+data_root: /cosmo/datasets/edges2shoes/     # dataset folder location

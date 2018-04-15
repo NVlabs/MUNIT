@@ -12,17 +12,14 @@ import torchvision.utils as vutils
 import sys
 import torch
 import os
-from torchvision import transforms
-from PIL import Image
 
 parser = OptionParser()
 parser.add_option('--config', type=str, help="net configuration")
-parser.add_option('--input', type=str, help="input image path")
-parser.add_option('--output_folder', type=str, help="output image path")
+parser.add_option('--input_folder', type=str, help="input image folder")
+parser.add_option('--output_folder', type=str, help="output image folder")
 parser.add_option('--checkpoint', type=str, help="checkpoint of autoencoders")
-parser.add_option('--style', type=str, default='', help="style image path")
-parser.add_option('--a2b', type=int, default=1, help="1 for a2b and others for b2a")
-parser.add_option('--seed', type=int, default=10, help="random seed")
+parser.add_option('--a2b', type=int, help="1 for a2b and others for b2a", default=1)
+parser.add_option('--seed', type=int, default=1, help="random seed")
 parser.add_option('--num_style',type=int, default=10, help="number of styles to sample")
 parser.add_option('--synchronized', action='store_true', help="whether use synchronized style code or not")
 parser.add_option('--output_only', action='store_true', help="whether use synchronized style code or not")
@@ -36,10 +33,11 @@ def main(argv):
 
     # Load experiment setting
     config = get_config(opts.config)
+    input_dim = config['new_size'] if opts.a2b else config['input_dim_b']
     style_dim = config['gen']['style_dim']
-    opts.num_style = 1 if opts.style != '' else opts.num_style
 
     # Setup model and data loader
+    data_loader = get_data_loader_folder(opts.input_folder, 1, False, input_dim == 1, crop=False)
     trainer = MUNIT_Trainer(config)
     state_dict = torch.load(opts.checkpoint)
     trainer.gen_a.load_state_dict(state_dict['a'])
@@ -47,31 +45,23 @@ def main(argv):
     trainer.cuda()
     trainer.eval()
     encode = trainer.gen_a.encode if opts.a2b else trainer.gen_b.encode # encode function
-    style_encode = trainer.gen_b.encode if opts.a2b else trainer.gen_a.encode # encode function
     decode = trainer.gen_b.decode if opts.a2b else trainer.gen_a.decode # decode function
 
-    transform = transforms.Compose([transforms.Resize(config['new_size']),
-                                    transforms.ToTensor(),
-                                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-    image = Variable(transform(Image.open(opts.input).convert('RGB')).unsqueeze(0).cuda(), volatile=True)
-    style_image = Variable(transform(Image.open(opts.style).convert('RGB')).unsqueeze(0).cuda(), volatile=True) if opts.style != '' else None
-
     # Start testing
-    style_rand = Variable(torch.randn(opts.num_style, style_dim, 1, 1).cuda(), volatile=True)
-    content, _ = encode(image)
-    if opts.style != '':
-        _, style = style_encode(style_image)
-    else:
-        style = style_rand
-    for j in range(opts.num_style):
-        s = style[j].unsqueeze(0)
-        outputs = decode(content, s)
-        outputs = (outputs + 1) / 2.
-        path = os.path.join(opts.output_folder, 'output{:03d}.jpg'.format(j))
-        vutils.save_image(outputs.data, path, padding=0, normalize=True)
-    if not opts.output_only:
-        # also save input images
-        vutils.save_image(image.data, os.path.join(opts.output_folder, 'input.jpg'), padding=0, normalize=True)
+    style_fixed = Variable(torch.randn(opts.num_style, style_dim, 1, 1).cuda(), volatile=True)
+    for i, images in enumerate(data_loader):
+        images = Variable(images.cuda(), volatile=True)
+        content, _ = encode(images)
+        style = style_fixed if opts.synchronized else Variable(torch.randn(opts.num_style, style_dim, 1, 1).cuda(), volatile=True)
+        for j in range(opts.num_style):
+            s = style[j].unsqueeze(0)
+            outputs = decode(content, s)
+            outputs = (outputs + 1) / 2.
+            path = os.path.join(opts.output_folder, 'input{:03d}_output{:03d}.jpg'.format(i, j))
+            vutils.save_image(outputs.data, path, padding=0, normalize=True)
+        if not opts.output_only:
+            # also save input images
+            vutils.save_image(images.data, os.path.join(opts.output_folder, 'input{:03d}.jpg'.format(i)), padding=0, normalize=True)
 
 if __name__ == '__main__':
     main(sys.argv)

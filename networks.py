@@ -93,14 +93,13 @@ class AdaINGen(nn.Module):
         activ = params['activ']
         pad_type = params['pad_type']
         mlp_dim = params['mlp_dim']
-        upsample_norm = params['upsample_norm']
 
         # style encoder
         self.enc_style = StyleEncoder(4, input_dim, dim, style_dim, norm='none', activ=activ)
 
         # content encoder
         self.enc_content = ContentEncoder(n_downsample, n_res, input_dim, dim, 'in', 'relu', pad_type=pad_type)
-        self.dec = Decoder(n_downsample, n_res, self.enc_content.output_dim, input_dim, activ='relu', pad_type=pad_type, upsample_norm=upsample_norm)
+        self.dec = Decoder(n_downsample, n_res, self.enc_content.output_dim, input_dim, activ='relu', pad_type=pad_type)
 
         # MLP to generate AdaIN parameters
         self.mlp = MLP(style_dim, self.get_num_adain_params(self.dec), mlp_dim, 3, norm='none', activ=activ)
@@ -183,7 +182,7 @@ class ContentEncoder(nn.Module):
         return self.model(x)
 
 class Decoder(nn.Module):
-    def __init__(self, n_upsample, n_res, dim, output_dim, activ='relu', pad_type='zero', upsample_norm='ln'):
+    def __init__(self, n_upsample, n_res, dim, output_dim, activ='relu', pad_type='zero'):
         super(Decoder, self).__init__()
 
         self.model = []
@@ -192,7 +191,7 @@ class Decoder(nn.Module):
         # upsampling blocks
         for i in range(n_upsample):
             self.model += [nn.Upsample(scale_factor=2),
-                           Conv2dBlock(dim, dim // 2, 5, 1, 2, norm=upsample_norm, activation=activ, pad_type='reflect')]
+                           Conv2dBlock(dim, dim // 2, 5, 1, 2, norm='ln', activation=activ, pad_type='reflect')]
             dim //= 2
         # use reflection padding in the last conv layer
         self.model += [Conv2dBlock(dim, output_dim, 7, 1, 3, norm='none', activation='tanh', pad_type='reflect')]
