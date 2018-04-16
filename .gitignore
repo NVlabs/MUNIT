@@ -1,0 +1,17 @@
+outputs/
+src/models/
+data/
+logs/
+.idea/
+dgx/scripts/
+.ipynb_checkpoints/
+src/*jpg
+notebooks/.ipynb_checkpoints/*
+exps/unit_local/configs/
+exps/unit_local/backup/
+src/yaml_generator.py
+*.tar.gz
+*ipynb
+*.zip
+*.pkl
+*.pyc
