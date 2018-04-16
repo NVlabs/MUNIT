@@ -9,8 +9,6 @@ Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses
 
 [Xun Huang](http://www.cs.cornell.edu/~xhuang/), [Ming-Yu Liu](http://mingyuliu.net/), [Serge Belongie](https://vision.cornell.edu/se3/people/serge-belongie/), [Jan Kautz](http://jankautz.com/), Multimodal Unsupervised Image-to-Image Translation
 
-Please cite our paper if this software is used in your publications.
-
 ### Dependency
 
 
