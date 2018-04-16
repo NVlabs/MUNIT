@@ -11,7 +11,7 @@ Please check out the [user manual page](USAGE.md).
 
 ### Paper
 
-[Xun Huang](http://www.cs.cornell.edu/~xhuang/), [Ming-Yu Liu](http://mingyuliu.net/), [Serge Belongie](https://vision.cornell.edu/se3/people/serge-belongie/), [Jan Kautz](http://jankautz.com/), Multimodal Unsupervised Image-to-Image Translation
+[Xun Huang](http://www.cs.cornell.edu/~xhuang/), [Ming-Yu Liu](http://mingyuliu.net/), [Serge Belongie](https://vision.cornell.edu/se3/people/serge-belongie/), [Jan Kautz](http://jankautz.com/), [Multimodal Unsupervised Image-to-Image Translation](https://arxiv.org/abs/1804.04732)
 
 #### Results Video
 [![](results/video.jpg)](https://youtu.be/ab64TWzWn40 "Multimodal UNsupervised Image-to-image Translation Networks")
@@ -36,6 +36,18 @@ Please check out the [user manual page](USAGE.md).
 
 ![](results/example_guided.jpg)
 
+#### Citation
+
+If you find this code useful for your research, please cite our paper:
+
+```
+@article{huang2018munit,
+  title={Multimodal UNsupervised Image-to-image Translation Networks},
+  author={Huang, Xun and Liu, Ming-Yu and Belongie, Serge and Kautz, Jan},
+  journal={arXiv preprint arXiv:1804.04732},
+  year={2018}
+}
+```
 
 
 
