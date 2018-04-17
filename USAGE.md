@@ -46,7 +46,7 @@ The above command outputs diverse shoes from an edge input. In addition, it is p
 
  
 #### Training
-1. Download the dataset you want to use. For example, you can use the edges2shoes dataset provided by [Zhu et al.](https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix)
+1. Download the dataset you want to use. For example, you can use the edges2shoes dataset provided by [Zhu et al.](https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix) Your dataset folder should contains 4 subfolders: trainA, trainB, testA, testB. Each subfolder contains training/testing images in domain A/B.
 
 3. Setup the yaml file. Check out `configs/edges2shoes.yaml`. Change the `data_root` field to the path of your downloaded dataset.
 
