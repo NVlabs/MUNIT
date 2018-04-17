@@ -12,7 +12,7 @@ import torch.backends.cudnn as cudnn
 import torch
 import os
 import sys
-import tensorboard
+from tensorboardX import SummaryWriter
 import shutil
 parser = OptionParser()
 parser.add_option('--config', type=str, help="net configuration")
@@ -41,7 +41,7 @@ def main(argv):
     train_display_images_b = Variable(torch.stack([train_loader_b.dataset[i] for i in range(display_size)]).cuda(), volatile=True)
 
     # Setup logger and output folders
-    train_writer = tensorboard.SummaryWriter(os.path.join(opts.log, model_name))
+    train_writer = SummaryWriter(os.path.join(opts.log, model_name))
     output_directory = os.path.join(opts.outputs, model_name)
     checkpoint_directory, image_directory = prepare_sub_folder(output_directory)
     shutil.copy(opts.config, os.path.join(output_directory, 'config.yaml')) # copy config file to output folder
