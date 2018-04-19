@@ -18,7 +18,11 @@ RUN rm /tmp/Anaconda2-5.0.1-Linux-x86_64.sh -rf
 RUN conda install -y pytorch torchvision cuda80 -c pytorch
 RUN conda install -y -c anaconda pip 
 RUN conda install -y -c anaconda yaml
+<<<<<<< HEAD
 RUN pip install tensorboard
 
 
 
+=======
+RUN pip install tensorboard tensorboardX
+>>>>>>> 7f997b2494b09c087d4e7fc5b466c5ac38f3e782

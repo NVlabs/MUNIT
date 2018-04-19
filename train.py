@@ -80,6 +80,7 @@ def main(argv):
                 write_html(output_directory + "/index.html", iterations + 1, config['image_save_iter'], 'images')
             if (iterations + 1) % config['image_save_iter'] == 0:
                 image_outputs = trainer.sample(test_display_images_a, test_display_images_b)
+
                 write_images(image_outputs[0:4], display_size, '%s/gen_a2b_train_current.jpg' % image_directory)
                 write_images(image_outputs[4:8], display_size, '%s/gen_b2a_train_current.jpg' % image_directory)
 

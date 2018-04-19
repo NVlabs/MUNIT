@@ -1,3 +1,7 @@
+
+[![License CC BY-NC-SA 4.0](https://img.shields.io/badge/license-CC4.0-blue.svg)](https://raw.githubusercontent.com/NVIDIA/FastPhotoStyle/master/LICENSE.md)
+![Python 2.7](https://img.shields.io/badge/python-2.7-green.svg)
+![Python 3.6](https://img.shields.io/badge/python-3.6-green.svg)
 ## MUNIT: Multimodal UNsupervised Image-to-image Translation
 
 ### License
@@ -10,7 +14,6 @@ Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses
 Please check out the [user manual page](USAGE.md).
 
 ### Paper
-
 [Xun Huang](http://www.cs.cornell.edu/~xhuang/), [Ming-Yu Liu](http://mingyuliu.net/), [Serge Belongie](https://vision.cornell.edu/se3/people/serge-belongie/), [Jan Kautz](http://jankautz.com/), "[Multimodal Unsupervised Image-to-Image Translation](https://arxiv.org/abs/1804.04732) arXiv preprint arXiv:1804.04732
 
 #### Results Video
@@ -38,11 +41,16 @@ Please check out the [user manual page](USAGE.md).
 
 #### Citation
 
+
 If you find this code useful for your research, please cite our paper:
 
 ```
 @article{huang2018munit,
+<<<<<<< HEAD
   title={Multimodal UNsupervised Image-to-image Translation Networks},
+=======
+  title={Multimodal Unsupervised Image-to-image Translation},
+>>>>>>> 7f997b2494b09c087d4e7fc5b466c5ac38f3e782
   author={Huang, Xun and Liu, Ming-Yu and Belongie, Serge and Kautz, Jan},
   journal={arXiv preprint arXiv:1804.04732},
   year={2018}

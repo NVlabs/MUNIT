@@ -20,6 +20,7 @@ import torch.nn.init as init
 def get_all_data_loaders(conf):
     batch_size = conf['batch_size']
     num_workers = conf['num_workers']
+
     if 'new_size' in conf:
         new_size_a = new_size_b = conf['new_size']
     else:
@@ -85,7 +86,6 @@ def eformat(f, prec):
     # add 1 to digits as 1 is taken by sign +/-
     return "%se%d"%(mantissa, int(exp))
 
-
 def write_images(image_outputs, display_image_num, file_name):
     image_outputs = [images.expand(-1, 3, -1, -1) for images in image_outputs] # expand gray-scale images to 3 channels
     image_tensor = torch.cat([images[:display_image_num] for images in image_outputs], 0)
@@ -120,15 +120,19 @@ def write_html(filename, iterations, image_save_iterations, image_directory, all
     <!DOCTYPE html>
     <html>
     <head>
+<<<<<<< HEAD
       <title>Experiment name = MUNIT</title>
       <meta http-equiv="refresh" content="30">
+=======
+      <title>Experiment name = UnitNet</title>
+      <meta content="1" http-equiv="reflesh">
+>>>>>>> 7f997b2494b09c087d4e7fc5b466c5ac38f3e782
     </head>
     <body>
     ''')
     html_file.write("<h3>current</h3>")
     write_one_row_html(html_file, iterations, '%s/gen_a2b_train_current.jpg' % (image_directory), all_size)
     write_one_row_html(html_file, iterations, '%s/gen_b2a_train_current.jpg' % (image_directory), all_size)
-
     for j in range(iterations, image_save_iterations-1, -1):
         if j % image_save_iterations == 0:
             write_one_row_html(html_file, j, '%s/gen_a2b_test_%08d.jpg' % (image_directory, j), all_size)
