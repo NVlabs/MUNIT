@@ -37,7 +37,7 @@ def main(argv):
 
     # Setup model and data loader
     data_loader = get_data_loader_folder(opts.input_folder, 1, False, input_dim == 1, crop=False)
-    trainer = MUNIT_Trainer(config)
+    trainer = MUNIT_Trainer(config,opts)
     state_dict = torch.load(opts.checkpoint)
     trainer.gen_a.load_state_dict(state_dict['a'])
     trainer.gen_b.load_state_dict(state_dict['b'])
