@@ -26,7 +26,7 @@ class ImageFilelist(data.Dataset):
     def __init__(self, root, flist, transform=None,
                  flist_reader=default_flist_reader, loader=default_loader):
         self.root = root
-        self.imlist = flist_reader(os.path.join(self.root, flist))
+        self.imlist = flist_reader(flist)
         self.transform = transform
         self.loader = loader
 

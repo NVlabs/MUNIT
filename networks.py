@@ -6,7 +6,10 @@ from torch import nn
 from torch.autograd import Variable
 import torch
 import torch.nn.functional as F
-import itertools
+try:
+    from itertools import izip as zip
+except ImportError: # will be 3.x series
+    pass
 
 ##################################################################################
 # Discriminator
@@ -52,7 +55,7 @@ class MsImageDis(nn.Module):
         outs0 = self.forward(input_fake)
         outs1 = self.forward(input_real)
         loss = 0
-        for it, (out0, out1) in enumerate(itertools.izip(outs0, outs1)):
+        for it, (out0, out1) in enumerate(zip(outs0, outs1)):
             if self.gan_type == 'lsgan':
                 loss += torch.mean((out0 - 0)**2) + torch.mean((out1 - 1)**2)
             elif self.gan_type == 'nsgan':

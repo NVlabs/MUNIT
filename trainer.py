@@ -10,7 +10,7 @@ import torch.nn as nn
 import os
 
 class MUNIT_Trainer(nn.Module):
-    def __init__(self, hyperparameters):
+    def __init__(self, hyperparameters, opts):
         super(MUNIT_Trainer, self).__init__()
         lr = hyperparameters['lr']
         # Initiate the networks
@@ -44,7 +44,7 @@ class MUNIT_Trainer(nn.Module):
 
         # Load VGG model if needed
         if 'vgg_w' in hyperparameters.keys() and hyperparameters['vgg_w'] > 0:
-            self.vgg = load_vgg16('models')
+            self.vgg = load_vgg16(opts.output_base + '/models')
             self.vgg.eval()
             for param in self.vgg.parameters():
                 param.requires_grad = False

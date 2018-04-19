@@ -6,18 +6,20 @@ from utils import get_all_data_loaders, prepare_sub_folder, \
     write_html, write_loss, get_config, write_images
 from optparse import OptionParser
 from torch.autograd import Variable
-from itertools import izip
+try:
+    from itertools import izip as zip
+except ImportError: # will be 3.x series
+    pass
 from trainer import MUNIT_Trainer
 import torch.backends.cudnn as cudnn
 import torch
 import os
 import sys
-import tensorboard
+import tensorboardX
 import shutil
 parser = OptionParser()
 parser.add_option('--config', type=str, help="net configuration")
-parser.add_option('--log', type=str, default='logs', help="log path")
-parser.add_option('--outputs', type=str, default='outputs', help="outputs path")
+parser.add_option('--output_base', type=str, default='.', help="outputs path")
 parser.add_option("--resume", action="store_true")
 
 
@@ -32,7 +34,7 @@ def main(argv):
     display_size = config['display_size']
 
     # Setup model and data loader
-    trainer = MUNIT_Trainer(config)
+    trainer = MUNIT_Trainer(config, opts)
     trainer.cuda()
     train_loader_a, train_loader_b, test_loader_a, test_loader_b = get_all_data_loaders(config)
     test_display_images_a = Variable(torch.stack([test_loader_a.dataset[i] for i in range(display_size)]).cuda(), volatile=True)
@@ -41,15 +43,15 @@ def main(argv):
     train_display_images_b = Variable(torch.stack([train_loader_b.dataset[i] for i in range(display_size)]).cuda(), volatile=True)
 
     # Setup logger and output folders
-    train_writer = tensorboard.SummaryWriter(os.path.join(opts.log, model_name))
-    output_directory = os.path.join(opts.outputs, model_name)
+    train_writer = tensorboardX.SummaryWriter(os.path.join(opts.output_base + "/logs", model_name))
+    output_directory = os.path.join(opts.output_base + "/outputs", model_name)
     checkpoint_directory, image_directory = prepare_sub_folder(output_directory)
     shutil.copy(opts.config, os.path.join(output_directory, 'config.yaml')) # copy config file to output folder
 
     # Start training
     iterations = trainer.resume(checkpoint_directory) if opts.resume else 0
     while True:
-        for it, (images_a, images_b) in enumerate(izip(train_loader_a, train_loader_b)):
+        for it, (images_a, images_b) in enumerate(zip(train_loader_a, train_loader_b)):
             trainer.update_learning_rate()
             images_a, images_b = Variable(images_a.cuda()), Variable(images_b.cuda())
 
@@ -66,15 +68,20 @@ def main(argv):
             if (iterations + 1) % config['image_save_iter'] == 0:
                 # Test set images
                 image_outputs = trainer.sample(test_display_images_a, test_display_images_b)
-                write_images(image_outputs, display_size, '%s/gen_test%08d.jpg' % (image_directory, iterations + 1))
+                write_images(image_outputs[0:4], display_size, '%s/gen_a2b_test_%08d.jpg' % (image_directory, iterations + 1))
+                write_images(image_outputs[4:8], display_size, '%s/gen_b2a_test_%08d.jpg' % (image_directory, iterations + 1))
+
                 # Train set images
                 image_outputs = trainer.sample(train_display_images_a, train_display_images_b)
-                write_images(image_outputs, display_size, '%s/gen_train%08d.jpg' % (image_directory, iterations + 1))
+                write_images(image_outputs[0:4], display_size, '%s/gen_a2b_train_%08d.jpg' % (image_directory, iterations + 1))
+                write_images(image_outputs[4:8], display_size, '%s/gen_b2a_train_%08d.jpg' % (image_directory, iterations + 1))
+
                 # HTML
                 write_html(output_directory + "/index.html", iterations + 1, config['image_save_iter'], 'images')
             if (iterations + 1) % config['image_save_iter'] == 0:
                 image_outputs = trainer.sample(test_display_images_a, test_display_images_b)
-                write_images(image_outputs, display_size, '%s/gen.jpg' % image_directory)
+                write_images(image_outputs[0:4], display_size, '%s/gen_a2b_train_current.jpg' % image_directory)
+                write_images(image_outputs[4:8], display_size, '%s/gen_b2a_train_current.jpg' % image_directory)
 
             # Save network weights
             if (iterations + 1) % config['snapshot_save_iter'] == 0:

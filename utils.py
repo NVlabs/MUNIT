@@ -20,17 +20,33 @@ import torch.nn.init as init
 def get_all_data_loaders(conf):
     batch_size = conf['batch_size']
     num_workers = conf['num_workers']
-    new_size = conf['new_size']
+    if 'new_size' in conf:
+        new_size_a = new_size_b = conf['new_size']
+    else:
+        new_size_a = conf['new_size_a']
+        new_size_b = conf['new_size_b']
     height = conf['crop_image_height']
     width = conf['crop_image_width']
-    train_loader_a = get_data_loader_folder(os.path.join(conf['data_root'], 'trainA'), batch_size, True,
-                                          new_size, height, width, num_workers, True)
-    test_loader_a = get_data_loader_folder(os.path.join(conf['data_root'], 'testA'), batch_size, False,
-                                         new_size, new_size, new_size, num_workers, True)
-    train_loader_b = get_data_loader_folder(os.path.join(conf['data_root'], 'trainB'), batch_size, True,
-                                          new_size, height, width, num_workers, True)
-    test_loader_b = get_data_loader_folder(os.path.join(conf['data_root'], 'testB'), batch_size, False,
-                                         new_size, new_size, new_size, num_workers, True)
+
+    if 'data_root' in conf:
+        train_loader_a = get_data_loader_folder(os.path.join(conf['data_root'], 'trainA'), batch_size, True,
+                                              new_size_a, height, width, num_workers, True)
+        test_loader_a = get_data_loader_folder(os.path.join(conf['data_root'], 'testA'), batch_size, False,
+                                             new_size_a, new_size_a, new_size_a, num_workers, True)
+        train_loader_b = get_data_loader_folder(os.path.join(conf['data_root'], 'trainB'), batch_size, True,
+                                              new_size_b, height, width, num_workers, True)
+        test_loader_b = get_data_loader_folder(os.path.join(conf['data_root'], 'testB'), batch_size, False,
+                                             new_size_b, new_size_b, new_size_b, num_workers, True)
+    else:
+        train_loader_a = get_data_loader_list(conf['data_folder_train_a'], conf['data_list_train_a'], batch_size, True,
+                                                new_size_a, height, width, num_workers, True)
+        test_loader_a = get_data_loader_list(conf['data_folder_test_a'], conf['data_list_test_a'], batch_size, False,
+                                                new_size_a, new_size_a, new_size_a, num_workers, True)
+        train_loader_b = get_data_loader_list(conf['data_folder_train_b'], conf['data_list_train_b'], batch_size, True,
+                                                new_size_b, height, width, num_workers, True)
+        test_loader_b = get_data_loader_list(conf['data_folder_test_b'], conf['data_list_test_b'], batch_size, False,
+                                                new_size_b, new_size_b, new_size_b, num_workers, True)
+
     return train_loader_a, train_loader_b, test_loader_a, test_loader_b
 
 def get_data_loader_list(root, file_list, batch_size, train, new_size=256,
@@ -69,11 +85,11 @@ def eformat(f, prec):
     # add 1 to digits as 1 is taken by sign +/-
     return "%se%d"%(mantissa, int(exp))
 
+
 def write_images(image_outputs, display_image_num, file_name):
     image_outputs = [images.expand(-1, 3, -1, -1) for images in image_outputs] # expand gray-scale images to 3 channels
     image_tensor = torch.cat([images[:display_image_num] for images in image_outputs], 0)
-    image_tensor = image_tensor.data
-    image_grid = vutils.make_grid(image_tensor, nrow=display_image_num, padding=0, normalize=True)
+    image_grid = vutils.make_grid(image_tensor.data, nrow=display_image_num, padding=0, normalize=True)
     vutils.save_image(image_grid, file_name, nrow=1)
 
 def prepare_sub_folder(output_directory):
@@ -87,46 +103,39 @@ def prepare_sub_folder(output_directory):
         os.makedirs(checkpoint_directory)
     return checkpoint_directory, image_directory
 
+def write_one_row_html(html_file, iterations, img_filename, all_size):
+    html_file.write("<h3>iteration [%d] (%s)</h3>" % (iterations,img_filename.split('/')[-1]))
+    html_file.write("""
+        <p>
+        <a href="%s">
+          <img src="%s" style="width:%dpx">
+        </a><br>
+        <p>
+        """ % (img_filename, img_filename, all_size))
+    return
+
 def write_html(filename, iterations, image_save_iterations, image_directory, all_size=1536):
     html_file = open(filename, "w")
     html_file.write('''
     <!DOCTYPE html>
     <html>
     <head>
-      <title>Experiment name = UnitNet</title>
-      <meta content="1" http-equiv="reflesh">
+      <title>Experiment name = MUNIT</title>
+      <meta http-equiv="refresh" content="30">
     </head>
     <body>
     ''')
     html_file.write("<h3>current</h3>")
-    img_filename = '%s/gen.jpg' % (image_directory)
-    html_file.write("""
-          <p>
-          <a href="%s">
-            <img src="%s" style="width:%dpx">
-          </a><br>
-          <p>
-          """ % (img_filename, img_filename, all_size))
+    write_one_row_html(html_file, iterations, '%s/gen_a2b_train_current.jpg' % (image_directory), all_size)
+    write_one_row_html(html_file, iterations, '%s/gen_b2a_train_current.jpg' % (image_directory), all_size)
+
     for j in range(iterations, image_save_iterations-1, -1):
         if j % image_save_iterations == 0:
-            img_filename = '%s/gen_test%08d.jpg' % (image_directory, j)
-            html_file.write("<h3>iteration [%d] (test)</h3>" % j)
-            html_file.write("""
-                  <p>
-                  <a href="%s">
-                    <img src="%s" style="width:%dpx">
-                  </a><br>
-                  <p>
-                  """ % (img_filename, img_filename, all_size))
-            img_filename = '%s/gen_train%08d.jpg' % (image_directory, j)
-            html_file.write("<h3>iteration [%d] (train)</h3>" % j)
-            html_file.write("""
-                  <p>
-                  <a href="%s">
-                    <img src="%s" style="width:%dpx">
-                  </a><br>
-                  <p>
-                  """ % (img_filename, img_filename, all_size))
+            write_one_row_html(html_file, j, '%s/gen_a2b_test_%08d.jpg' % (image_directory, j), all_size)
+            write_one_row_html(html_file, j, '%s/gen_b2a_test_%08d.jpg' % (image_directory, j), all_size)
+            write_one_row_html(html_file, j, '%s/gen_a2b_train_%08d.jpg' % (image_directory, j), all_size)
+            write_one_row_html(html_file, j, '%s/gen_b2a_train_%08d.jpg' % (image_directory, j), all_size)
+
     html_file.write("</body></html>")
     html_file.close()
 
