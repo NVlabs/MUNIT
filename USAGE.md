@@ -11,7 +11,7 @@ Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses
 ### Dependency
 
 
-pytorch, yaml, and tensorboard (from https://github.com/dmlc/tensorboard).
+pytorch, yaml, tensorboard (from https://github.com/dmlc/tensorboard), and tensorboardX (from https://github.com/lanpa/tensorboard-pytorch).
 
 
 The code base was developed using Anaconda with the following packages.
@@ -19,7 +19,7 @@ The code base was developed using Anaconda with the following packages.
 conda install pytorch torchvision cuda80 -c soumith
 conda install -y -c anaconda pip; 
 conda install -y -c anaconda yaml;
-pip install tensorboard;
+pip install tensorboard tensorboardX;
 ```
 
 We also provide a [Dockerfile](Dockerfile) for building an environment for running the MUNIT code.
