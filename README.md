@@ -46,11 +46,7 @@ If you find this code useful for your research, please cite our paper:
 
 ```
 @article{huang2018munit,
-<<<<<<< HEAD
-  title={Multimodal UNsupervised Image-to-image Translation Networks},
-=======
   title={Multimodal Unsupervised Image-to-image Translation},
->>>>>>> 7f997b2494b09c087d4e7fc5b466c5ac38f3e782
   author={Huang, Xun and Liu, Ming-Yu and Belongie, Serge and Kautz, Jan},
   journal={arXiv preprint arXiv:1804.04732},
   year={2018}
