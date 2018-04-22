@@ -7,8 +7,7 @@ dgx/scripts/
 .ipynb_checkpoints/
 src/*jpg
 notebooks/.ipynb_checkpoints/*
-exps/unit_local/configs/
-exps/unit_local/backup/
+exps/
 src/yaml_generator.py
 *.tar.gz
 *ipynb

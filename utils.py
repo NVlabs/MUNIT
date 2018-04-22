@@ -16,11 +16,28 @@ import torchvision.utils as vutils
 import yaml
 import numpy as np
 import torch.nn.init as init
+# Methods
+# get_all_data_loaders      : primary data loader interface (load trainA, testA, trainB, testB)
+# get_data_loader_list      : list-based data loader
+# get_data_loader_folder    : folder-based data loader
+# get_config                : load yaml file
+# eformat                   :
+# write_images              : save output image
+# prepare_sub_folder        : create checkpoints and images folders for saving outputs
+# write_one_row_html        : write one row of the html file for output images
+# write_html                : create the html file.
+# write_loss
+# slerp
+# get_slerp_interp
+# get_model_list
+# load_vgg16
+# vgg_preprocess
+# get_scheduler
+# weights_init
 
 def get_all_data_loaders(conf):
     batch_size = conf['batch_size']
     num_workers = conf['num_workers']
-
     if 'new_size' in conf:
         new_size_a = new_size_b = conf['new_size']
     else:
@@ -47,8 +64,8 @@ def get_all_data_loaders(conf):
                                                 new_size_b, height, width, num_workers, True)
         test_loader_b = get_data_loader_list(conf['data_folder_test_b'], conf['data_list_test_b'], batch_size, False,
                                                 new_size_b, new_size_b, new_size_b, num_workers, True)
-
     return train_loader_a, train_loader_b, test_loader_a, test_loader_b
+
 
 def get_data_loader_list(root, file_list, batch_size, train, new_size=256,
                            height=256, width=256, num_workers=4, crop=True):
@@ -80,17 +97,20 @@ def get_config(config):
     with open(config, 'r') as stream:
         return yaml.load(stream)
 
+
 def eformat(f, prec):
     s = "%.*e"%(prec, f)
     mantissa, exp = s.split('e')
     # add 1 to digits as 1 is taken by sign +/-
     return "%se%d"%(mantissa, int(exp))
 
+
 def write_images(image_outputs, display_image_num, file_name):
     image_outputs = [images.expand(-1, 3, -1, -1) for images in image_outputs] # expand gray-scale images to 3 channels
     image_tensor = torch.cat([images[:display_image_num] for images in image_outputs], 0)
     image_grid = vutils.make_grid(image_tensor.data, nrow=display_image_num, padding=0, normalize=True)
     vutils.save_image(image_grid, file_name, nrow=1)
+
 
 def prepare_sub_folder(output_directory):
     image_directory = os.path.join(output_directory, 'images')
@@ -103,16 +123,17 @@ def prepare_sub_folder(output_directory):
         os.makedirs(checkpoint_directory)
     return checkpoint_directory, image_directory
 
+
 def write_one_row_html(html_file, iterations, img_filename, all_size):
     html_file.write("<h3>iteration [%d] (%s)</h3>" % (iterations,img_filename.split('/')[-1]))
     html_file.write("""
-        <p>
-        <a href="%s">
+        <p><a href="%s">
           <img src="%s" style="width:%dpx">
         </a><br>
         <p>
         """ % (img_filename, img_filename, all_size))
     return
+
 
 def write_html(filename, iterations, image_save_iterations, image_directory, all_size=1536):
     html_file = open(filename, "w")
@@ -120,13 +141,8 @@ def write_html(filename, iterations, image_save_iterations, image_directory, all
     <!DOCTYPE html>
     <html>
     <head>
-<<<<<<< HEAD
       <title>Experiment name = MUNIT</title>
       <meta http-equiv="refresh" content="30">
-=======
-      <title>Experiment name = UnitNet</title>
-      <meta content="1" http-equiv="reflesh">
->>>>>>> 7f997b2494b09c087d4e7fc5b466c5ac38f3e782
     </head>
     <body>
     ''')
@@ -139,15 +155,16 @@ def write_html(filename, iterations, image_save_iterations, image_directory, all
             write_one_row_html(html_file, j, '%s/gen_b2a_test_%08d.jpg' % (image_directory, j), all_size)
             write_one_row_html(html_file, j, '%s/gen_a2b_train_%08d.jpg' % (image_directory, j), all_size)
             write_one_row_html(html_file, j, '%s/gen_b2a_train_%08d.jpg' % (image_directory, j), all_size)
-
     html_file.write("</body></html>")
     html_file.close()
+
 
 def write_loss(iterations, trainer, train_writer):
     members = [attr for attr in dir(trainer) \
                if not callable(getattr(trainer, attr)) and not attr.startswith("__") and ('loss' in attr or 'grad' in attr or 'nwd' in attr)]
     for m in members:
         train_writer.add_scalar(m, getattr(trainer, m), iterations + 1)
+
 
 def slerp(val, low, high):
     """
@@ -158,6 +175,7 @@ def slerp(val, low, high):
     omega = np.arccos(np.dot(low / np.linalg.norm(low), high / np.linalg.norm(high)))
     so = np.sin(omega)
     return np.sin((1.0 - val) * omega) / so * low + np.sin(val * omega) / so * high
+
 
 def get_slerp_interp(nb_latents, nb_interp, z_dim):
     """
@@ -176,6 +194,7 @@ def get_slerp_interp(nb_latents, nb_interp, z_dim):
 
     return latent_interps[:, :, np.newaxis, np.newaxis]
 
+
 # Get model list for resume
 def get_model_list(dirname, key):
     if os.path.exists(dirname) is False:
@@ -187,6 +206,7 @@ def get_model_list(dirname, key):
     gen_models.sort()
     last_model_name = gen_models[-1]
     return last_model_name
+
 
 def load_vgg16(model_dir):
     """ Use the model from https://github.com/abhiskk/fast-neural-style/blob/master/neural_style/utils.py """
@@ -204,6 +224,7 @@ def load_vgg16(model_dir):
     vgg.load_state_dict(torch.load(os.path.join(model_dir, 'vgg16.weight')))
     return vgg
 
+
 def vgg_preprocess(batch):
     tensortype = type(batch.data)
     (r, g, b) = torch.chunk(batch, 3, dim = 1)
@@ -216,6 +237,7 @@ def vgg_preprocess(batch):
     batch = batch.sub(Variable(mean)) # subtract mean
     return batch
 
+
 def get_scheduler(optimizer, hyperparameters, iterations=-1):
     if 'lr_policy' not in hyperparameters or hyperparameters['lr_policy'] == 'constant':
         scheduler = None # constant scheduler
@@ -225,6 +247,7 @@ def get_scheduler(optimizer, hyperparameters, iterations=-1):
     else:
         return NotImplementedError('learning rate policy [%s] is not implemented', hyperparameters['lr_policy'])
     return scheduler
+
 
 def weights_init(init_type='gaussian'):
     def init_fun(m):
