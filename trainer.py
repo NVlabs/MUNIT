@@ -176,7 +176,7 @@ class MUNIT_Trainer(nn.Module):
         state_dict = torch.load(last_model_name)
         self.gen_a.load_state_dict(state_dict['a'])
         self.gen_b.load_state_dict(state_dict['b'])
-        iterations = int(last_model_name[-12:-4])
+        iterations = int(last_model_name[-11:-3])
         # Load discriminators
         last_model_name = get_model_list(checkpoint_dir, "dis")
         state_dict = torch.load(last_model_name)
