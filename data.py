@@ -98,6 +98,7 @@ def make_dataset(dir):
 
     return images
 
+
 class ImageFolder(data.Dataset):
 
     def __init__(self, root, transform=None, return_paths=False,
