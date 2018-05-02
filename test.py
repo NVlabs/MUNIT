@@ -39,7 +39,7 @@ def main(argv):
     opts.num_style = 1 if opts.style != '' else opts.num_style
 
     # Setup model and data loader
-    trainer = MUNIT_Trainer(config,opts)
+    trainer = MUNIT_Trainer(config)
     state_dict = torch.load(opts.checkpoint)
     trainer.gen_a.load_state_dict(state_dict['a'])
     trainer.gen_b.load_state_dict(state_dict['b'])
