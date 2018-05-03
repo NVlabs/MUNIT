@@ -55,4 +55,4 @@ The above command outputs diverse shoes from an edge input. In addition, it is p
     python train.py --config configs/edges2handbags_folder.yaml
     ```
     
-4. Intermediate image outputs and model binary files are stored in `outputs/edges2handbags`
+4. Intermediate image outputs and model binary files are stored in `outputs/edges2handbags_folder`
