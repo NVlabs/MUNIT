@@ -3,7 +3,7 @@ Copyright (C) 2018 NVIDIA Corporation.  All rights reserved.
 Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode).
 """
 from __future__ import print_function
-from utils import get_config, get_data_loader_folder
+from utils import get_config
 from trainer import MUNIT_Trainer, UNIT_Trainer
 import argparse
 from torch.autograd import Variable
@@ -67,36 +67,37 @@ else:
     else:
         new_size = config['new_size_b']
 
-transform = transforms.Compose([transforms.Resize(new_size),
-                                transforms.ToTensor(),
-                                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-image = Variable(transform(Image.open(opts.input).convert('RGB')).unsqueeze(0).cuda(), volatile=True)
-style_image = Variable(transform(Image.open(opts.style).convert('RGB')).unsqueeze(0).cuda(), volatile=True) if opts.style != '' else None
+with torch.no_grad():
+    transform = transforms.Compose([transforms.Resize(new_size),
+                                    transforms.ToTensor(),
+                                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+    image = Variable(transform(Image.open(opts.input).convert('RGB')).unsqueeze(0).cuda())
+    style_image = Variable(transform(Image.open(opts.style).convert('RGB')).unsqueeze(0).cuda()) if opts.style != '' else None
 
-# Start testing
-content, _ = encode(image)
+    # Start testing
+    content, _ = encode(image)
 
-if opts.trainer == 'MUNIT':
-    style_rand = Variable(torch.randn(opts.num_style, style_dim, 1, 1).cuda(), volatile=True)
-    if opts.style != '':
-        _, style = style_encode(style_image)
-    else:
-        style = style_rand
-    for j in range(opts.num_style):
-        s = style[j].unsqueeze(0)
-        outputs = decode(content, s)
+    if opts.trainer == 'MUNIT':
+        style_rand = Variable(torch.randn(opts.num_style, style_dim, 1, 1).cuda())
+        if opts.style != '':
+            _, style = style_encode(style_image)
+        else:
+            style = style_rand
+        for j in range(opts.num_style):
+            s = style[j].unsqueeze(0)
+            outputs = decode(content, s)
+            outputs = (outputs + 1) / 2.
+            path = os.path.join(opts.output_folder, 'output{:03d}.jpg'.format(j))
+            vutils.save_image(outputs.data, path, padding=0, normalize=True)
+    elif opts.trainer == 'UNIT':
+        outputs = decode(content)
         outputs = (outputs + 1) / 2.
-        path = os.path.join(opts.output_folder, 'output{:03d}.jpg'.format(j))
+        path = os.path.join(opts.output_folder, 'output.jpg')
         vutils.save_image(outputs.data, path, padding=0, normalize=True)
-elif opts.trainer == 'UNIT':
-    outputs = decode(content)
-    outputs = (outputs + 1) / 2.
-    path = os.path.join(opts.output_folder, 'output.jpg')
-    vutils.save_image(outputs.data, path, padding=0, normalize=True)
-else:
-    pass
+    else:
+        pass
 
-if not opts.output_only:
-    # also save input images
-    vutils.save_image(image.data, os.path.join(opts.output_folder, 'input.jpg'), padding=0, normalize=True)
+    if not opts.output_only:
+        # also save input images
+        vutils.save_image(image.data, os.path.join(opts.output_folder, 'input.jpg'), padding=0, normalize=True)
 

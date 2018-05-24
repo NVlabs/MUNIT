@@ -262,18 +262,18 @@ def weights_init(init_type='gaussian'):
         if (classname.find('Conv') == 0 or classname.find('Linear') == 0) and hasattr(m, 'weight'):
             # print m.__class__.__name__
             if init_type == 'gaussian':
-                init.normal(m.weight.data, 0.0, 0.02)
+                init.normal_(m.weight.data, 0.0, 0.02)
             elif init_type == 'xavier':
-                init.xavier_normal(m.weight.data, gain=math.sqrt(2))
+                init.xavier_normal_(m.weight.data, gain=math.sqrt(2))
             elif init_type == 'kaiming':
-                init.kaiming_normal(m.weight.data, a=0, mode='fan_in')
+                init.kaiming_normal_(m.weight.data, a=0, mode='fan_in')
             elif init_type == 'orthogonal':
-                init.orthogonal(m.weight.data, gain=math.sqrt(2))
+                init.orthogonal_(m.weight.data, gain=math.sqrt(2))
             elif init_type == 'default':
                 pass
             else:
                 assert 0, "Unsupported initialization: {}".format(init_type)
             if hasattr(m, 'bias') and m.bias is not None:
-                init.constant(m.bias.data, 0.0)
+                init.constant_(m.bias.data, 0.0)
 
     return init_fun

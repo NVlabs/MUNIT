@@ -305,7 +305,7 @@ class Conv2dBlock(nn.Module):
         if norm == 'bn':
             self.norm = nn.BatchNorm2d(norm_dim)
         elif norm == 'in':
-            self.norm = nn.InstanceNorm2d(norm_dim)
+            self.norm = nn.InstanceNorm2d(norm_dim, track_running_stats=True)
         elif norm == 'ln':
             self.norm = LayerNorm(norm_dim)
         elif norm == 'adain':

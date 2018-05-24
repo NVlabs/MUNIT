@@ -54,10 +54,8 @@ class MUNIT_Trainer(nn.Module):
 
     def forward(self, x_a, x_b):
         self.eval()
-        x_a.volatile = True
-        x_b.volatile = True
-        s_a = Variable(self.s_a, volatile=True)
-        s_b = Variable(self.s_b, volatile=True)
+        s_a = Variable(self.s_a)
+        s_b = Variable(self.s_b)
         c_a, s_a_fake = self.gen_a.encode(x_a)
         c_b, s_b_fake = self.gen_b.encode(x_b)
         x_ba = self.gen_a.decode(c_b, s_a)
@@ -125,12 +123,10 @@ class MUNIT_Trainer(nn.Module):
 
     def sample(self, x_a, x_b):
         self.eval()
-        x_a.volatile = True
-        x_b.volatile = True
-        s_a1 = Variable(self.s_a, volatile=True)
-        s_b1 = Variable(self.s_b, volatile=True)
-        s_a2 = Variable(torch.randn(x_a.size(0), self.style_dim, 1, 1).cuda(), volatile=True)
-        s_b2 = Variable(torch.randn(x_b.size(0), self.style_dim, 1, 1).cuda(), volatile=True)
+        s_a1 = Variable(self.s_a)
+        s_b1 = Variable(self.s_b)
+        s_a2 = Variable(torch.randn(x_a.size(0), self.style_dim, 1, 1).cuda())
+        s_b2 = Variable(torch.randn(x_b.size(0), self.style_dim, 1, 1).cuda())
         x_a_recon, x_b_recon, x_ba1, x_ba2, x_ab1, x_ab2 = [], [], [], [], [], []
         for i in range(x_a.size(0)):
             c_a, s_a_fake = self.gen_a.encode(x_a[i].unsqueeze(0))
@@ -242,8 +238,6 @@ class UNIT_Trainer(nn.Module):
 
     def forward(self, x_a, x_b):
         self.eval()
-        x_a.volatile = True
-        x_b.volatile = True
         h_a, _ = self.gen_a.encode(x_a)
         h_b, _ = self.gen_b.encode(x_b)
         x_ba = self.gen_a.decode(h_b)
@@ -319,8 +313,6 @@ class UNIT_Trainer(nn.Module):
 
     def sample(self, x_a, x_b):
         self.eval()
-        x_a.volatile = True
-        x_b.volatile = True
         x_a_recon, x_b_recon, x_ba, x_ab = [], [], [], []
         for i in range(x_a.size(0)):
             h_a, _ = self.gen_a.encode(x_a[i].unsqueeze(0))
