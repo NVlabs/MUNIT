@@ -14,7 +14,7 @@ Please check out the [user manual page](USAGE.md).
 
 ### Paper
 
-[Xun Huang](http://www.cs.cornell.edu/~xhuang/), [Ming-Yu Liu](http://mingyuliu.net/), [Serge Belongie](https://vision.cornell.edu/se3/people/serge-belongie/), [Jan Kautz](http://jankautz.com/), "[Multimodal Unsupervised Image-to-Image Translation](https://arxiv.org/abs/1804.04732)" arXiv preprint arXiv:1804.04732
+[Xun Huang](http://www.cs.cornell.edu/~xhuang/), [Ming-Yu Liu](http://mingyuliu.net/), [Serge Belongie](https://vision.cornell.edu/se3/people/serge-belongie/), [Jan Kautz](http://jankautz.com/), "[Multimodal Unsupervised Image-to-Image Translation](https://arxiv.org/abs/1804.04732)", ECCV 2018 (to appear)
 
 ### Results Video
 [![](results/video.jpg)](https://youtu.be/ab64TWzWn40)
@@ -50,10 +50,10 @@ Please check out the [user manual page](USAGE.md).
 If you find this code useful for your research, please cite our paper:
 
 ```
-@article{huang2018munit,
+@inproceedings{huang2018munit,
   title={Multimodal Unsupervised Image-to-image Translation},
   author={Huang, Xun and Liu, Ming-Yu and Belongie, Serge and Kautz, Jan},
-  journal={arXiv preprint arXiv:1804.04732},
+  booktitle={ECCV},
   year={2018}
 }
 ```
