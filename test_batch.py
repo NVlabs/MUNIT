@@ -66,7 +66,7 @@ decode = trainer.gen_b.decode if opts.a2b else trainer.gen_a.decode # decode fun
 if opts.trainer == 'MUNIT':
     # Start testing
     style_fixed = Variable(torch.randn(opts.num_style, style_dim, 1, 1).cuda(), volatile=True)
-    for i, (images, names) in enumerate(zip(data_loader,image_names)):
+    for i, (images, names) in enumerate(zip(data_loader, image_names)):
         print(names[1])
         images = Variable(images.cuda(), volatile=True)
         content, _ = encode(images)
@@ -86,7 +86,7 @@ if opts.trainer == 'MUNIT':
             vutils.save_image(images.data, os.path.join(opts.output_folder, 'input{:03d}.jpg'.format(i)), padding=0, normalize=True)
 elif opts.trainer == 'UNIT':
     # Start testing
-    for i, (images, names) in enumerate(zip(data_loader,image_names)):
+    for i, (images, names) in enumerate(zip(data_loader, image_names)):
         print(names[1])
         images = Variable(images.cuda(), volatile=True)
         content, _ = encode(images)
