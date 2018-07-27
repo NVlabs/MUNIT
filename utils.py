@@ -16,6 +16,7 @@ import torchvision.utils as vutils
 import yaml
 import numpy as np
 import torch.nn.init as init
+import time
 # Methods
 # get_all_data_loaders      : primary data loader interface (load trainA, testA, trainB, testB)
 # get_data_loader_list      : list-based data loader
@@ -277,3 +278,16 @@ def weights_init(init_type='gaussian'):
                 init.constant_(m.bias.data, 0.0)
 
     return init_fun
+
+
+class Timer:
+    def __init__(self, msg):
+        self.msg = msg
+        self.start_time = None
+
+    def __enter__(self):
+        self.start_time = time.time()
+
+    def __exit__(self, exc_type, exc_value, exc_tb):
+        print(self.msg % (time.time() - self.start_time))
+

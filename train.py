@@ -2,7 +2,7 @@
 Copyright (C) 2018 NVIDIA Corporation.  All rights reserved.
 Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode).
 """
-from utils import get_all_data_loaders, prepare_sub_folder, write_html, write_loss, get_config, write_2images
+from utils import get_all_data_loaders, prepare_sub_folder, write_html, write_loss, get_config, write_2images, Timer
 import argparse
 from torch.autograd import Variable
 from trainer import MUNIT_Trainer, UNIT_Trainer
@@ -41,10 +41,10 @@ else:
     sys.exit("Only support MUNIT|UNIT")
 trainer.cuda()
 train_loader_a, train_loader_b, test_loader_a, test_loader_b = get_all_data_loaders(config)
-train_display_images_a = Variable(torch.stack([train_loader_a.dataset[i] for i in range(display_size)]).cuda())
-train_display_images_b = Variable(torch.stack([train_loader_b.dataset[i] for i in range(display_size)]).cuda())
-test_display_images_a = Variable(torch.stack([test_loader_a.dataset[i] for i in range(display_size)]).cuda())
-test_display_images_b = Variable(torch.stack([test_loader_b.dataset[i] for i in range(display_size)]).cuda())
+train_display_images_a = torch.stack([train_loader_a.dataset[i] for i in range(display_size)]).cuda()
+train_display_images_b = torch.stack([train_loader_b.dataset[i] for i in range(display_size)]).cuda()
+test_display_images_a = torch.stack([test_loader_a.dataset[i] for i in range(display_size)]).cuda()
+test_display_images_b = torch.stack([test_loader_b.dataset[i] for i in range(display_size)]).cuda()
 
 # Setup logger and output folders
 model_name = os.path.splitext(os.path.basename(opts.config))[0]
@@ -58,11 +58,13 @@ iterations = trainer.resume(checkpoint_directory, hyperparameters=config) if opt
 while True:
     for it, (images_a, images_b) in enumerate(zip(train_loader_a, train_loader_b)):
         trainer.update_learning_rate()
-        images_a, images_b = Variable(images_a.cuda()), Variable(images_b.cuda())
+        images_a, images_b = images_a.cuda().detach(), images_b.cuda().detach()
 
-        # Main training code
-        trainer.dis_update(images_a, images_b, config)
-        trainer.gen_update(images_a, images_b, config)
+        with Timer("Elapsed time in update: %f"):
+            # Main training code
+            trainer.dis_update(images_a, images_b, config)
+            trainer.gen_update(images_a, images_b, config)
+            torch.cuda.synchronize()
 
         # Dump training stats in log file
         if (iterations + 1) % config['log_iter'] == 0:

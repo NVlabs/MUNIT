@@ -305,7 +305,8 @@ class Conv2dBlock(nn.Module):
         if norm == 'bn':
             self.norm = nn.BatchNorm2d(norm_dim)
         elif norm == 'in':
-            self.norm = nn.InstanceNorm2d(norm_dim, track_running_stats=True)
+            #self.norm = nn.InstanceNorm2d(norm_dim, track_running_stats=True)
+            self.norm = nn.InstanceNorm2d(norm_dim)
         elif norm == 'ln':
             self.norm = LayerNorm(norm_dim)
         elif norm == 'adain':
@@ -474,6 +475,7 @@ class AdaptiveInstanceNorm2d(nn.Module):
     def __repr__(self):
         return self.__class__.__name__ + '(' + str(self.num_features) + ')'
 
+
 class LayerNorm(nn.Module):
     def __init__(self, num_features, eps=1e-5, affine=True):
         super(LayerNorm, self).__init__()
@@ -487,11 +489,16 @@ class LayerNorm(nn.Module):
 
     def forward(self, x):
         shape = [-1] + [1] * (x.dim() - 1)
-        mean = x.view(x.size(0), -1).mean(1).view(*shape)
-        std = x.view(x.size(0), -1).std(1).view(*shape)
+        # print(x.size())
+        # mean = x.view(x.size(0), -1).mean(1).view(*shape)
+        # std = x.view(x.size(0), -1).std(1).view(*shape)
+        mean = x.view(-1).mean().view(*shape)
+        std = x.view(-1).std().view(*shape)
+
         x = (x - mean) / (std + self.eps)
 
         if self.affine:
             shape = [1, -1] + [1] * (x.dim() - 2)
             x = x * self.gamma.view(*shape) + self.beta.view(*shape)
         return x
+
