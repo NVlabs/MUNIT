@@ -22,8 +22,9 @@ class MUNIT_Trainer(nn.Module):
         self.style_dim = hyperparameters['gen']['style_dim']
 
         # fix the noise used in sampling
-        self.s_a = torch.randn(8, self.style_dim, 1, 1).cuda()
-        self.s_b = torch.randn(8, self.style_dim, 1, 1).cuda()
+        display_size = int(hyperparameters['display_size'])
+        self.s_a = torch.randn(display_size, self.style_dim, 1, 1).cuda()
+        self.s_b = torch.randn(display_size, self.style_dim, 1, 1).cuda()
 
         # Setup the optimizers
         beta1 = hyperparameters['beta1']

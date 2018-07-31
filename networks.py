@@ -490,10 +490,13 @@ class LayerNorm(nn.Module):
     def forward(self, x):
         shape = [-1] + [1] * (x.dim() - 1)
         # print(x.size())
-        # mean = x.view(x.size(0), -1).mean(1).view(*shape)
-        # std = x.view(x.size(0), -1).std(1).view(*shape)
-        mean = x.view(-1).mean().view(*shape)
-        std = x.view(-1).std().view(*shape)
+        if x.size(0) == 1:
+            # These two lines run much faster in pytorch 0.4 than the two lines listed below.
+            mean = x.view(-1).mean().view(*shape)
+            std = x.view(-1).std().view(*shape)
+        else:
+            mean = x.view(x.size(0), -1).mean(1).view(*shape)
+            std = x.view(x.size(0), -1).std(1).view(*shape)
 
         x = (x - mean) / (std + self.eps)
 
