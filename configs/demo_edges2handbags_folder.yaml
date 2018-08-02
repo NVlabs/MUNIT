@@ -51,12 +51,4 @@ num_workers: 8                              # number of data loading threads
 new_size: 256                               # first resize the shortest image side to this size
 crop_image_height: 256                      # random crop image of this height
 crop_image_width: 256                       # random crop image of this width
-
-data_folder_train_a: ./datasets/edges2handbags/trainA
-data_list_train_a: ./datasets/edges2handbags/list_trainA.txt
-data_folder_test_a: ./datasets/edges2handbags/testA
-data_list_test_a: ./datasets/edges2handbags/list_testA.txt
-data_folder_train_b: ./datasets/edges2handbags/trainB
-data_list_train_b: ./datasets/edges2handbags/list_trainB.txt
-data_folder_test_b: ./datasets/edges2handbags/testB
-data_list_test_b: ./datasets/edges2handbags/list_testB.txt
+data_root: ./datasets/demo_edges2handbags/     # dataset folder location

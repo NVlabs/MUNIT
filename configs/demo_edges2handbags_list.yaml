@@ -2,11 +2,11 @@
 # Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode).
 
 # logger options
-image_save_iter: 10000        # How often do you want to save output images during training
-image_display_iter: 500       # How often do you want to display output images during training
-display_size: 16              # How many images do you want to display each time
+image_save_iter: 1000         # How often do you want to save output images during training
+image_display_iter: 100       # How often do you want to display output images during training
+display_size: 8               # How many images do you want to display each time
 snapshot_save_iter: 10000     # How often do you want to save trained models
-log_iter: 10                  # How often do you want to log the training stats
+log_iter: 1                   # How often do you want to log the training stats
 
 # optimization options
 max_iter: 1000000             # maximum number of training iterations
@@ -51,4 +51,12 @@ num_workers: 8                              # number of data loading threads
 new_size: 256                               # first resize the shortest image side to this size
 crop_image_height: 256                      # random crop image of this height
 crop_image_width: 256                       # random crop image of this width
-data_root: ./datasets/edges2shoes/     # dataset folder location
+
+data_folder_train_a: ./datasets/demo_edges2handbags/trainA
+data_list_train_a: ./datasets/demo_edges2handbags/list_trainA.txt
+data_folder_test_a: ./datasets/demo_edges2handbags/testA
+data_list_test_a: ./datasets/demo_edges2handbags/list_testA.txt
+data_folder_train_b: ./datasets/demo_edges2handbags/trainB
+data_list_train_b: ./datasets/demo_edges2handbags/list_trainB.txt
+data_folder_test_b: ./datasets/demo_edges2handbags/testB
+data_list_test_b: ./datasets/demo_edges2handbags/list_testB.txt

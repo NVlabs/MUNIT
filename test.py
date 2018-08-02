@@ -3,7 +3,7 @@ Copyright (C) 2018 NVIDIA Corporation.  All rights reserved.
 Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode).
 """
 from __future__ import print_function
-from utils import get_config
+from utils import get_config, pytorch03_to_pytorch04
 from trainer import MUNIT_Trainer, UNIT_Trainer
 import argparse
 from torch.autograd import Variable
@@ -27,9 +27,8 @@ parser.add_argument('--synchronized', action='store_true', help="whether use syn
 parser.add_argument('--output_only', action='store_true', help="whether use synchronized style code or not")
 parser.add_argument('--output_path', type=str, default='.', help="path for logs, checkpoints, and VGG model weight")
 parser.add_argument('--trainer', type=str, default='MUNIT', help="MUNIT|UNIT")
-
-
 opts = parser.parse_args()
+
 
 
 torch.manual_seed(opts.seed)
@@ -50,7 +49,11 @@ elif opts.trainer == 'UNIT':
     trainer = UNIT_Trainer(config)
 else:
     sys.exit("Only support MUNIT|UNIT")
-state_dict = torch.load(opts.checkpoint)
+
+
+state_dict = pytorch03_to_pytorch04(torch.load(opts.checkpoint))
+
+
 trainer.gen_a.load_state_dict(state_dict['a'])
 trainer.gen_b.load_state_dict(state_dict['b'])
 trainer.cuda()

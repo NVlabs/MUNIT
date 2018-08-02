@@ -2,11 +2,11 @@
 # Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode).
 
 # logger options
-image_save_iter: 1000         # How often do you want to save output images during training
-image_display_iter: 100       # How often do you want to display output images during training
-display_size: 8               # How many images do you want to display each time
+image_save_iter: 10000        # How often do you want to save output images during training
+image_display_iter: 500       # How often do you want to display output images during training
+display_size: 16              # How many images do you want to display each time
 snapshot_save_iter: 10000     # How often do you want to save trained models
-log_iter: 1                   # How often do you want to log the training stats
+log_iter: 10                  # How often do you want to log the training stats
 
 # optimization options
 max_iter: 1000000             # maximum number of training iterations

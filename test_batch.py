@@ -3,7 +3,7 @@ Copyright (C) 2018 NVIDIA Corporation.  All rights reserved.
 Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode).
 """
 from __future__ import print_function
-from utils import get_config, get_data_loader_folder
+from utils import get_config, get_data_loader_folder, pytorch03_to_pytorch04
 from trainer import MUNIT_Trainer, UNIT_Trainer
 import argparse
 from torch.autograd import Variable
@@ -55,7 +55,7 @@ else:
     sys.exit("Only support MUNIT|UNIT")
 
 
-state_dict = torch.load(opts.checkpoint)
+state_dict = pytorch03_to_pytorch04(torch.load(opts.checkpoint))
 trainer.gen_a.load_state_dict(state_dict['a'])
 trainer.gen_b.load_state_dict(state_dict['b'])
 trainer.cuda()
