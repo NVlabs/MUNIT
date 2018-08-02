@@ -26,12 +26,6 @@ In the test time as illustrated in (b) of the above image, when we want to trans
 
 - Hardware: PC with NVIDIA Titan GPU. For large resolution images, you need NVIDIA Tesla P100 or V100 GPUs, which have 16GB+ GPU memory. 
 - Software: *Ubuntu 16.04*, *CUDA 9.1*, *Anaconda3*, *pytorch 0.4.1*
-- Environment variables.
-  - export ANACONDA=PATH-TO-YOUR-ANACONDA-LIBRARY
-  - export CUDA_PATH=/usr/local/cuda
-  - export PATH=${ANACONDA}/bin:${CUDA_PATH}/bin:$PATH
-  - export LD_LIBRARY_PATH=${ANACONDA}/lib:${CUDA_PATH}/bin64:$LD_LIBRARY_PATH
-  - export C_INCLUDE_PATH=${CUDA_PATH}/include
 - System package
   - `sudo apt-get install -y axel imagemagick` (Only used for demo)  
 - Python package
@@ -104,8 +98,8 @@ The above command outputs diverse shoes from an edge input. In addition, it is p
     python test.py --config configs/edges2shoes_folder.yaml --input inputs/edges2shoes_edge.jpg --output_folder results --checkpoint models/edges2shoes.pt --a2b 1 --style inputs/edges2shoes_shoe.jpg
  
 | Input Photo | Style Photo | Output Photo |
-|-------|---------------|---------------|---------------|---------------|---------------|
-| <img src="https://raw.githubusercontent.com/NVlabs/MUNIT/master/inputs/edges2shoes_edge.jpg" width="128" title="Input"> | <img src="https://raw.githubusercontent.com/NVlabs/MUNIT/master/inputs/edges2shoes_shoe.jpg" width="128" title="Style"> | <img src="https://raw.githubusercontent.com/NVlabs/MUNIT/master/results/output000.jpg" width="128" title="Output"> | <img  
+|-------|---------------|---------------|
+| <img src="https://raw.githubusercontent.com/NVlabs/MUNIT/master/inputs/edges2shoes_edge.jpg" width="128" title="Input"> | <img src="https://raw.githubusercontent.com/NVlabs/MUNIT/master/inputs/edges2shoes_shoe.jpg" width="128" title="Style"> | <img src="https://raw.githubusercontent.com/NVlabs/MUNIT/master/results/output000.jpg" width="128" title="Output"> |   
  
 ### Yosemite Summer2Winter HD dataset
 
