@@ -54,10 +54,15 @@ elif opts.trainer == 'UNIT':
 else:
     sys.exit("Only support MUNIT|UNIT")
 
+try:
+    state_dict = torch.load(opts.checkpoint)
+    trainer.gen_a.load_state_dict(state_dict['a'])
+    traier.gen_b.load_state_dict(state_dict['b'])
+except:
+    state_dict = pytorch03_to_pytorch04(torch.load(opts.checkpoint))
+    trainer.gen_a.load_state_dict(state_dict['a'])
+    trainer.gen_b.load_state_dict(state_dict['b'])
 
-state_dict = pytorch03_to_pytorch04(torch.load(opts.checkpoint))
-trainer.gen_a.load_state_dict(state_dict['a'])
-trainer.gen_b.load_state_dict(state_dict['b'])
 trainer.cuda()
 trainer.eval()
 encode = trainer.gen_a.encode if opts.a2b else trainer.gen_b.encode # encode function
