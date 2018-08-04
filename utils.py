@@ -292,36 +292,83 @@ class Timer:
         print(self.msg % (time.time() - self.start_time))
 
 
-def pytorch03_to_pytorch04(state_dict_base):
-    def __conversion_core(state_dict_base):
+def pytorch03_to_pytorch04(state_dict_base, trainer_name):
+    def __conversion_core(state_dict_base, trainer_name):
         state_dict = state_dict_base.copy()
-        for key, value in state_dict_base.items():
-            if key.endswith(('enc_content.model.0.norm.running_mean',
-                             'enc_content.model.0.norm.running_var',
-                             'enc_content.model.1.norm.running_mean',
-                             'enc_content.model.1.norm.running_var',
-                             'enc_content.model.2.norm.running_mean',
-                             'enc_content.model.2.norm.running_var',
-                             'enc_content.model.3.model.0.model.1.norm.running_mean',
-                             'enc_content.model.3.model.0.model.1.norm.running_var',
-                             'enc_content.model.3.model.0.model.0.norm.running_mean',
-                             'enc_content.model.3.model.0.model.0.norm.running_var',
-                             'enc_content.model.3.model.1.model.1.norm.running_mean',
-                             'enc_content.model.3.model.1.model.1.norm.running_var',
-                             'enc_content.model.3.model.1.model.0.norm.running_mean',
-                             'enc_content.model.3.model.1.model.0.norm.running_var',
-                             'enc_content.model.3.model.2.model.1.norm.running_mean',
-                             'enc_content.model.3.model.2.model.1.norm.running_var',
-                             'enc_content.model.3.model.2.model.0.norm.running_mean',
-                             'enc_content.model.3.model.2.model.0.norm.running_var',
-                             'enc_content.model.3.model.3.model.1.norm.running_mean',
-                             'enc_content.model.3.model.3.model.1.norm.running_var',
-                             'enc_content.model.3.model.3.model.0.norm.running_mean',
-                             'enc_content.model.3.model.3.model.0.norm.running_var',
-                             )):
-                del state_dict[key]
+        if trainer_name == 'MUNIT':
+            for key, value in state_dict_base.items():
+                if key.endswith(('enc_content.model.0.norm.running_mean',
+                                 'enc_content.model.0.norm.running_var',
+                                 'enc_content.model.1.norm.running_mean',
+                                 'enc_content.model.1.norm.running_var',
+                                 'enc_content.model.2.norm.running_mean',
+                                 'enc_content.model.2.norm.running_var',
+                                 'enc_content.model.3.model.0.model.1.norm.running_mean',
+                                 'enc_content.model.3.model.0.model.1.norm.running_var',
+                                 'enc_content.model.3.model.0.model.0.norm.running_mean',
+                                 'enc_content.model.3.model.0.model.0.norm.running_var',
+                                 'enc_content.model.3.model.1.model.1.norm.running_mean',
+                                 'enc_content.model.3.model.1.model.1.norm.running_var',
+                                 'enc_content.model.3.model.1.model.0.norm.running_mean',
+                                 'enc_content.model.3.model.1.model.0.norm.running_var',
+                                 'enc_content.model.3.model.2.model.1.norm.running_mean',
+                                 'enc_content.model.3.model.2.model.1.norm.running_var',
+                                 'enc_content.model.3.model.2.model.0.norm.running_mean',
+                                 'enc_content.model.3.model.2.model.0.norm.running_var',
+                                 'enc_content.model.3.model.3.model.1.norm.running_mean',
+                                 'enc_content.model.3.model.3.model.1.norm.running_var',
+                                 'enc_content.model.3.model.3.model.0.norm.running_mean',
+                                 'enc_content.model.3.model.3.model.0.norm.running_var',
+                                 )):
+                    del state_dict[key]
+        else:
+            def __conversion_core(state_dict_base):
+                state_dict = state_dict_base.copy()
+                for key, value in state_dict_base.items():
+                    if key.endswith(('enc.model.0.norm.running_mean',
+                                     'enc.model.0.norm.running_var',
+                                     'enc.model.1.norm.running_mean',
+                                     'enc.model.1.norm.running_var',
+                                     'enc.model.2.norm.running_mean',
+                                     'enc.model.2.norm.running_var',
+                                     'enc.model.3.model.0.model.1.norm.running_mean',
+                                     'enc.model.3.model.0.model.1.norm.running_var',
+                                     'enc.model.3.model.0.model.0.norm.running_mean',
+                                     'enc.model.3.model.0.model.0.norm.running_var',
+                                     'enc.model.3.model.1.model.1.norm.running_mean',
+                                     'enc.model.3.model.1.model.1.norm.running_var',
+                                     'enc.model.3.model.1.model.0.norm.running_mean',
+                                     'enc.model.3.model.1.model.0.norm.running_var',
+                                     'enc.model.3.model.2.model.1.norm.running_mean',
+                                     'enc.model.3.model.2.model.1.norm.running_var',
+                                     'enc.model.3.model.2.model.0.norm.running_mean',
+                                     'enc.model.3.model.2.model.0.norm.running_var',
+                                     'enc.model.3.model.3.model.1.norm.running_mean',
+                                     'enc.model.3.model.3.model.1.norm.running_var',
+                                     'enc.model.3.model.3.model.0.norm.running_mean',
+                                     'enc.model.3.model.3.model.0.norm.running_var',
+
+                                     'dec.model.0.model.0.model.1.norm.running_mean',
+                                     'dec.model.0.model.0.model.1.norm.running_var',
+                                     'dec.model.0.model.0.model.0.norm.running_mean',
+                                     'dec.model.0.model.0.model.0.norm.running_var',
+                                     'dec.model.0.model.1.model.1.norm.running_mean',
+                                     'dec.model.0.model.1.model.1.norm.running_var',
+                                     'dec.model.0.model.1.model.0.norm.running_mean',
+                                     'dec.model.0.model.1.model.0.norm.running_var',
+                                     'dec.model.0.model.2.model.1.norm.running_mean',
+                                     'dec.model.0.model.2.model.1.norm.running_var',
+                                     'dec.model.0.model.2.model.0.norm.running_mean',
+                                     'dec.model.0.model.2.model.0.norm.running_var',
+                                     'dec.model.0.model.3.model.1.norm.running_mean',
+                                     'dec.model.0.model.3.model.1.norm.running_var',
+                                     'dec.model.0.model.3.model.0.norm.running_mean',
+                                     'dec.model.0.model.3.model.0.norm.running_var',
+                                     )):
+                        del state_dict[key]
         return state_dict
+
     state_dict = dict()
-    state_dict['a'] = __conversion_core(state_dict_base['a'])
-    state_dict['b'] = __conversion_core(state_dict_base['b'])
+    state_dict['a'] = __conversion_core(state_dict_base['a'], trainer_name)
+    state_dict['b'] = __conversion_core(state_dict_base['b'], trainer_name)
     return state_dict
