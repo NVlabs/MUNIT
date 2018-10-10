@@ -10,6 +10,7 @@ from torch.optim import lr_scheduler
 from torchvision import transforms
 from data import ImageFilelist, ImageFolder
 import torch
+import torch.nn as nn
 import os
 import math
 import torchvision.utils as vutils
@@ -32,6 +33,7 @@ import time
 # get_slerp_interp
 # get_model_list
 # load_vgg16
+# load_inception
 # vgg_preprocess
 # get_scheduler
 # weights_init
@@ -232,6 +234,16 @@ def load_vgg16(model_dir):
     vgg.load_state_dict(torch.load(os.path.join(model_dir, 'vgg16.weight')))
     return vgg
 
+def load_inception(model_path):
+    state_dict = torch.load(model_path)
+    model = inception_v3(pretrained=False, transform_input=True)
+    model.aux_logits = False
+    num_ftrs = model.fc.in_features
+    model.fc = nn.Linear(num_ftrs, state_dict['fc.weight'].size(0))
+    model.load_state_dict(state_dict)
+    for param in model.parameters():
+        param.requires_grad = False
+    return model
 
 def vgg_preprocess(batch):
     tensortype = type(batch.data)
