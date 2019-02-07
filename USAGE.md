@@ -16,7 +16,7 @@ pytorch, yaml, tensorboard (from https://github.com/dmlc/tensorboard), and tenso
 
 The code base was developed using Anaconda with the following packages.
 ```
-conda install pytorch=0.3 torchvision cuda80 -c pytorch;
+conda install pytorch=0.4.1 torchvision cuda91 -c pytorch;
 conda install -y -c anaconda pip;
 conda install -y -c anaconda pyyaml;
 pip install tensorboard tensorboardX;
