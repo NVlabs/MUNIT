@@ -1,0 +1,54 @@
+# Copyright (C) 2017 NVIDIA Corporation.  All rights reserved.
+# Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode).
+
+# logger options
+image_save_iter: 10000        # How often do you want to save output images during training
+image_display_iter: 500       # How often do you want to display output images during training
+display_size: 16              # How many images do you want to display each time
+snapshot_save_iter: 10000     # How often do you want to save trained models
+log_iter: 10                  # How often do you want to log the training stats
+
+# optimization options
+max_iter: 1000000             # maximum number of training iterations
+batch_size: 1                 # batch size
+weight_decay: 0.0001          # weight decay
+beta1: 0.5                    # Adam parameter
+beta2: 0.999                  # Adam parameter
+init: kaiming                 # initialization [gaussian/kaiming/xavier/orthogonal]
+lr: 0.0001                    # initial learning rate
+lr_policy: step               # learning rate scheduler
+step_size: 100000             # how often to decay learning rate
+gamma: 0.5                    # how much to decay learning rate
+gan_w: 1                      # weight of adversarial loss
+recon_x_w: 10                 # weight of image reconstruction loss
+recon_s_w: 1                  # weight of style reconstruction loss
+recon_c_w: 1                  # weight of content reconstruction loss
+recon_x_cyc_w: 10              # weight of explicit style augmented cycle consistency loss
+vgg_w: 1                      # weight of domain-invariant perceptual loss
+
+# model options
+gen:
+  dim: 64                     # number of filters in the bottommost layer
+  mlp_dim: 256                # number of filters in MLP
+  style_dim: 8                # length of style code
+  activ: relu                 # activation function [relu/lrelu/prelu/selu/tanh]
+  n_downsample: 2             # number of downsampling layers in content encoder
+  n_res: 4                    # number of residual blocks in content encoder/decoder
+  pad_type: reflect           # padding type [zero/reflect]
+dis:
+  dim: 64                     # number of filters in the bottommost layer
+  norm: none                  # normalization layer [none/bn/in/ln]
+  activ: lrelu                # activation function [relu/lrelu/prelu/selu/tanh]
+  n_layer: 4                  # number of layers in D
+  gan_type: lsgan             # GAN loss [lsgan/nsgan]
+  num_scales: 3               # number of scales
+  pad_type: reflect           # padding type [zero/reflect]
+
+# data options
+input_dim_a: 3                              # number of image channels [1/3]
+input_dim_b: 3                              # number of image channels [1/3]
+num_workers: 8                              # number of data loading threads
+new_size: 512                               # first resize the shortest image side to this size
+crop_image_height: 512                      # random crop image of this height
+crop_image_width: 512                       # random crop image of this width
+data_root: ./datasets/synthia2cityscape/     # dataset folder location
