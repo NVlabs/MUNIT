@@ -27,7 +27,7 @@ parser.add_argument('--config', type=str, default='configs/edges2handbags_folder
 parser.add_argument('--input_folder', type=str, help="input image folder")
 parser.add_argument('--output_folder', type=str, help="output image folder")
 parser.add_argument('--checkpoint', type=str, help="checkpoint of autoencoders")
-parser.add_argument('--a2b', type=int, help="1 for a2b and others for b2a", default=1)
+parser.add_argument('--a2b', type=int, help="1 for a2b and 0 for b2a", default=1)
 parser.add_argument('--seed', type=int, default=1, help="random seed")
 parser.add_argument('--num_style',type=int, default=10, help="number of styles to sample")
 parser.add_argument('--synchronized', action='store_true', help="whether use synchronized style code or not")
