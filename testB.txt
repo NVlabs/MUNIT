@@ -1,0 +1,12 @@
+/network/tmp1/cosnegau/Output_water_segmentation/sorted_crf/img/856.png
+/network/tmp1/cosnegau/Output_water_segmentation/sorted_crf/img/734.png
+/network/tmp1/cosnegau/Output_water_segmentation/sorted_crf/img/355.png
+/network/tmp1/cosnegau/Output_water_segmentation/sorted_crf/img/384.png
+/network/tmp1/cosnegau/Output_water_segmentation/sorted_crf/img/851.png
+/network/tmp1/cosnegau/Output_water_segmentation/sorted_crf/img/507.png
+/network/tmp1/cosnegau/Output_water_segmentation/sorted_crf/img/975.png
+/network/tmp1/cosnegau/Output_water_segmentation/sorted_crf/img/166.png
+/network/tmp1/cosnegau/Output_water_segmentation/sorted_crf/img/610.png
+/network/tmp1/cosnegau/Output_water_segmentation/sorted_crf/img/748.png
+/network/tmp1/cosnegau/Output_water_segmentation/sorted_crf/img/329.png
+/network/tmp1/cosnegau/Output_water_segmentation/sorted_crf/img/799.png

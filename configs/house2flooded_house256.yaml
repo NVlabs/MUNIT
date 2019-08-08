@@ -2,10 +2,10 @@
 # Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode).
 
 # logger options
-image_save_iter: 10000        # How often do you want to save output images during training
-image_display_iter: 100       # How often do you want to display output images during training
-display_size: 16              # How many images do you want to display each time
-snapshot_save_iter: 10000     # How often do you want to save trained models
+image_save_iter: 1000         # How often do you want to save output images during training
+image_display_iter: 500       # How often do you want to display output images during training
+display_size: 8               # How many images do you want to display each time
+snapshot_save_iter: 20000     # How often do you want to save trained models
 log_iter: 1                   # How often do you want to log the training stats
 
 # optimization options
@@ -70,5 +70,5 @@ data_folder_train_b: /network/home/cosnegau/MUNIT/trainB/
 data_list_train_b: /network/home/cosnegau/MUNIT/trainB.txt
 data_folder_test_b: /network/home/cosnegau/MUNIT/testB/
 data_list_test_b: /network/home/cosnegau/MUNIT/testB.txt
-data_list_train_a_seg: /network/home/cosnegau/MUNIT_V2/trainA_seg.txt
-data_list_train_b_seg: /network/home/cosnegau/MUNIT_V2/trainB_seg.txt
+data_list_train_a_seg: /network/home/cosnegau/MUNIT/trainA_seg.txt
+data_list_train_b_seg: /network/home/cosnegau/MUNIT/trainB_seg.txt
