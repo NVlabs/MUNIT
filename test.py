@@ -4,7 +4,7 @@ Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses
 """
 from __future__ import print_function
 from utils import get_config, pytorch03_to_pytorch04
-from trainer import MUNIT_Trainer, UNIT_Trainer
+from trainer import MUNIT_Trainer
 import argparse
 from torch.autograd import Variable
 import torchvision.utils as vutils
@@ -20,7 +20,7 @@ parser.add_argument('--input', type=str, help="input image path")
 parser.add_argument('--output_folder', type=str, help="output image path")
 parser.add_argument('--checkpoint', type=str, help="checkpoint of autoencoders")
 parser.add_argument('--style', type=str, default='', help="style image path")
-parser.add_argument('--a2b', type=int, default=1, help="1 for a2b and others for b2a")
+parser.add_argument('--a2b', type=int, default=1, help="1 for a2b and 0 for b2a")
 parser.add_argument('--seed', type=int, default=10, help="random seed")
 parser.add_argument('--num_style',type=int, default=10, help="number of styles to sample")
 parser.add_argument('--synchronized', action='store_true', help="whether use synchronized style code or not")
@@ -52,12 +52,9 @@ else:
 
 try:
     state_dict = torch.load(opts.checkpoint)
-    trainer.gen_a.load_state_dict(state_dict['a'])
-    trainer.gen_b.load_state_dict(state_dict['b'])
+    trainer.gen.load_state_dict(state_dict['2'])
 except:
-    state_dict = pytorch03_to_pytorch04(torch.load(opts.checkpoint), opts.trainer)
-    trainer.gen_a.load_state_dict(state_dict['a'])
-    trainer.gen_b.load_state_dict(state_dict['b'])
+    print('can t access the ckpt directory', opts.checkpoint) 
 
 trainer.cuda()
 trainer.eval()
@@ -106,4 +103,3 @@ with torch.no_grad():
     if not opts.output_only:
         # also save input images
         vutils.save_image(image.data, os.path.join(opts.output_folder, 'input.jpg'), padding=0, normalize=True)
-

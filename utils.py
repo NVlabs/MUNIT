@@ -116,11 +116,13 @@ def __write_images(image_outputs, display_image_num, file_name):
     vutils.save_image(image_grid, file_name, nrow=1)
 
 
-def write_2images(image_outputs, display_image_num, image_directory, postfix):
+def write_2images(image_outputs, display_image_num, image_directory, postfix, comet_exp=None):
     n = len(image_outputs)
     __write_images(image_outputs[0:n//2], display_image_num, '%s/gen_a2b_%s.jpg' % (image_directory, postfix))
     __write_images(image_outputs[n//2:n], display_image_num, '%s/gen_b2a_%s.jpg' % (image_directory, postfix))
-
+    if comet_exp is not None:
+        comet_exp.log_image('%s/gen_a2b_%s.jpg' % (image_directory, postfix))
+        comet_exp.log_image('%s/gen_b2a_%s.jpg' % (image_directory, postfix))
 
 def prepare_sub_folder(output_directory):
     image_directory = os.path.join(output_directory, 'images')
