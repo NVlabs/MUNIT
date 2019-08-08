@@ -2,19 +2,24 @@
 Copyright (C) 2017 NVIDIA Corporation.  All rights reserved.
 Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode).
 """
+from comet_ml import Experiment
 from networks import AdaINGen, AdaINGen_double, MsImageDis, VAEGen
-from utils import weights_init, get_model_list, vgg_preprocess, load_vgg16, get_scheduler
+from utils import weights_init, get_model_list, vgg_preprocess, load_vgg16, get_scheduler,load_flood_classifier,transform_torchVar,seg_transform,load_segmentation_model,decode_segmap
 from torch.autograd import Variable
+from torchvision import transforms
 import torch
 import torch.nn as nn
 import os
+from PIL import Image
 
 class MUNIT_Trainer(nn.Module):
     def __init__(self, hyperparameters):
         super(MUNIT_Trainer, self).__init__()
         lr = hyperparameters['lr']
-        self.gen_state = hyperparameters['gen_state']
-        
+        self.gen_state  = hyperparameters['gen_state']
+        self.guided     = hyperparameters['guided']
+        self.newsize    = hyperparameters['new_size']
+        self.semantic_w = hyperparameters['semantic_w']>0
         if self.gen_state == 0:
             # Initiate the networks
             self.gen_a = AdaINGen(hyperparameters['input_dim_a'], hyperparameters['gen'])  # auto-encoder for domain a
@@ -65,9 +70,22 @@ class MUNIT_Trainer(nn.Module):
             self.vgg.eval()
             for param in self.vgg.parameters():
                 param.requires_grad = False
-
+                
+        # Load semantic segmentation model if needed
+        if 'semantic_w' in hyperparameters.keys() and hyperparameters['semantic_w'] > 0:
+            self.segmentation_model = load_segmentation_model(hyperparameters['semantic_ckpt_path'])
+            self.segmentation_model.eval()
+            for param in self.segmentation_model.parameters():
+                param.requires_grad = False
+                
     def recon_criterion(self, input, target):
         return torch.mean(torch.abs(input - target))
+
+    def recon_criterion_mask(self,input, target, mask):
+        '''
+            Mask of the region you don't want to compute the recon loss.
+        '''
+        return torch.mean(torch.abs(torch.mul((input - target),1-mask)))
     
     def forward(self,x_a,x_b):
         self.eval()
@@ -88,7 +106,7 @@ class MUNIT_Trainer(nn.Module):
         self.train()
         return x_ab, x_ba
 
-    def gen_update(self, x_a, x_b, hyperparameters,comet_exp=None):
+    def gen_update(self, x_a, x_b, hyperparameters,mask_a=None,mask_b=None,comet_exp=None):
         self.gen_opt.zero_grad()
         s_a = Variable(torch.randn(x_a.size(0), self.style_dim, 1, 1).cuda())
         s_b = Variable(torch.randn(x_b.size(0), self.style_dim, 1, 1).cuda())
@@ -101,8 +119,14 @@ class MUNIT_Trainer(nn.Module):
             x_a_recon = self.gen_a.decode(c_a, s_a_prime)
             x_b_recon = self.gen_b.decode(c_b, s_b_prime)
             # decode (cross domain)
-            x_ba = self.gen_a.decode(c_b, s_a)
-            x_ab = self.gen_b.decode(c_a, s_b)
+            if self.guided == 0 :
+                x_ba = self.gen_a.decode(c_b, s_a)
+                x_ab = self.gen_b.decode(c_a, s_b)
+            elif self.guided ==1:
+                x_ba = self.gen_a.decode(c_b, s_a_prime)
+                x_ab = self.gen_b.decode(c_a, s_b_prime)
+            else:
+                print('self.guided unknown value:',self.guided)
             # encode again
             c_b_recon, s_a_recon = self.gen_a.encode(x_ba)
             c_a_recon, s_b_recon = self.gen_b.encode(x_ab)
@@ -117,8 +141,15 @@ class MUNIT_Trainer(nn.Module):
             x_a_recon = self.gen.decode(c_a, s_a_prime,1)
             x_b_recon = self.gen.decode(c_b, s_b_prime,2)
             # decode (cross domain)
-            x_ba = self.gen.decode(c_b, s_a,1)
-            x_ab = self.gen.decode(c_a, s_b,2)
+            if self.guided == 0 :
+                x_ba = self.gen.decode(c_b, s_a,1)
+                x_ab = self.gen.decode(c_a, s_b,2)
+            elif self.guided ==1:
+                x_ba = self.gen.decode(c_b, s_a_prime,1)
+                x_ab = self.gen.decode(c_a, s_b_prime,2)
+            else:
+                print('self.guided unknown value:',self.guided)
+                
             # encode again
             c_b_recon, s_a_recon = self.gen.encode(x_ba,1)
             c_a_recon, s_b_recon = self.gen.encode(x_ab,2)
@@ -143,6 +174,11 @@ class MUNIT_Trainer(nn.Module):
         # domain-invariant perceptual loss
         self.loss_gen_vgg_a = self.compute_vgg_loss(self.vgg, x_ba, x_b) if hyperparameters['vgg_w'] > 0 else 0
         self.loss_gen_vgg_b = self.compute_vgg_loss(self.vgg, x_ab, x_a) if hyperparameters['vgg_w'] > 0 else 0
+        
+        # semantic-segmentation loss        
+        self.loss_sem_seg = self.compute_semantic_seg_loss(x_a.squeeze(), x_ab.squeeze(),mask_a) +\
+                            self.compute_semantic_seg_loss(x_b.squeeze(), x_ba.squeeze(),mask_b) \
+                            if hyperparameters['semantic_w'] > 0 else 0
         # total loss
         self.loss_gen_total = hyperparameters['gan_w'] * self.loss_gen_adv_a + \
                               hyperparameters['gan_w'] * self.loss_gen_adv_b + \
@@ -155,7 +191,8 @@ class MUNIT_Trainer(nn.Module):
                               hyperparameters['recon_x_cyc_w'] * self.loss_gen_cycrecon_x_a + \
                               hyperparameters['recon_x_cyc_w'] * self.loss_gen_cycrecon_x_b + \
                               hyperparameters['vgg_w'] * self.loss_gen_vgg_a + \
-                              hyperparameters['vgg_w'] * self.loss_gen_vgg_b
+                              hyperparameters['vgg_w'] * self.loss_gen_vgg_b + \
+                              hyperparameters['semantic_w'] * self.loss_sem_seg 
         
         if comet_exp is not None:
             comet_exp.log_metric("loss_gen_adv_a", self.loss_gen_adv_a)
@@ -172,6 +209,8 @@ class MUNIT_Trainer(nn.Module):
             if hyperparameters['vgg_w'] >0: 
                 comet_exp.log_metric("loss_gen_vgg_a", self.loss_gen_vgg_a)
                 comet_exp.log_metric("loss_gen_vgg_b", self.loss_gen_vgg_b)
+            if hyperparameters['semantic_w']>0:
+                comet_exp.log_metric("loss_sem_seg", self.loss_sem_seg)
                 
         self.loss_gen_total.backward()
         self.gen_opt.step()
@@ -182,7 +221,29 @@ class MUNIT_Trainer(nn.Module):
         img_fea = vgg(img_vgg)
         target_fea = vgg(target_vgg)
         return torch.mean((self.instancenorm(img_fea) - self.instancenorm(target_fea)) ** 2)
-
+    
+    def compute_semantic_seg_loss(self, img1,img2, mask):
+        # denorm 
+        img1_denorm = (img1 + 1) / 2.
+        img2_denorm = (img2 + 1) / 2.
+        # norm for semantic seg network
+        input_transformed1 = seg_transform()(img1_denorm).unsqueeze(0)
+        input_transformed2 = seg_transform()(img2_denorm).unsqueeze(0)
+        #compute labels from original image and logits from translated version
+        target = self.segmentation_model(input_transformed1).squeeze().max(0)[1].unsqueeze(0)
+        output = self.segmentation_model(input_transformed2)
+        #Resize mask to the size of the image
+        mask1 = torch.nn.functional.interpolate(mask, size=(self.newsize,self.newsize))
+        mask1_tensor = torch.tensor(mask1,dtype=torch.long).cuda()
+        # we want the masked region to be labeled as unknown (19 is not an existing label)
+        target_with_mask = torch.mul(1-mask1_tensor,target) +mask1_tensor*19
+        mask2 = torch.nn.functional.interpolate(mask, size=(self.newsize,self.newsize))
+        mask_tensor = torch.tensor(mask2,dtype=torch.float).cuda()
+        output_with_mask = (torch.mul(1-mask_tensor,output))  
+        # cat the mask as to the logits (loss=0 over the masked region)
+        output_with_mask_cat = torch.cat((output_with_mask.squeeze(),mask_tensor.squeeze().unsqueeze(0)))
+        loss = nn.CrossEntropyLoss()(output_with_mask_cat.unsqueeze(0),target_with_mask.squeeze().unsqueeze(0))
+        return(loss)
     def sample(self, x_a, x_b):
         self.eval()
         s_a1 = Variable(self.s_a)
@@ -213,12 +274,61 @@ class MUNIT_Trainer(nn.Module):
                 x_ab2.append(self.gen.decode(c_a, s_b2[i].unsqueeze(0),2))
         else:
             print('self.gen_state unknown value:',self.gen_state) 
-            
+           
         x_a_recon, x_b_recon = torch.cat(x_a_recon), torch.cat(x_b_recon)
         x_ba1, x_ba2 = torch.cat(x_ba1), torch.cat(x_ba2)
         x_ab1, x_ab2 = torch.cat(x_ab1), torch.cat(x_ab2)
+        
+        if self.semantic_w:
+            rgb_a_list,rgb_b_list,rgb_ab_list, rgb_ba_list  = [], [],[],[]
+
+            for i in range(x_a.size(0)):
+
+                # Inference semantic segmentation on original images
+                im_a  = (x_a[i].squeeze()+1)/2.
+                im_b  = (x_b[i].squeeze()+1)/2.
+
+                input_transformed_a = seg_transform()(im_a).unsqueeze(0)
+                input_transformed_b = seg_transform()(im_b).unsqueeze(0)
+                output_a = self.segmentation_model(input_transformed_a).squeeze().max(0)[1]
+                output_b = self.segmentation_model(input_transformed_b).squeeze().max(0)[1]
+
+                rgb_a = decode_segmap(output_a.cpu().numpy())
+                rgb_b = decode_segmap(output_b.cpu().numpy())
+                rgb_a = Image.fromarray(rgb_a).resize((x_a.size(3),x_a.size(3)))
+                rgb_b = Image.fromarray(rgb_b).resize((x_a.size(3),x_a.size(3)))
+
+                rgb_a_list.append(transforms.ToTensor()(rgb_a).unsqueeze(0))
+                rgb_b_list.append(transforms.ToTensor()(rgb_b).unsqueeze(0))
+
+                # Inference semantic segmentation on fake images        
+                image_ab  = (x_ab1[i].squeeze()+1)/2.
+                image_ba  = (x_ba1[i].squeeze()+1)/2.
+
+                input_transformed_ab = seg_transform()(image_ab).unsqueeze(0).to('cuda')
+                input_transformed_ba = seg_transform()(image_ba).unsqueeze(0).to('cuda')
+
+                output_ab = self.segmentation_model(input_transformed_ab).squeeze().max(0)[1]
+                output_ba = self.segmentation_model(input_transformed_ba).squeeze().max(0)[1]
+
+                rgb_ab = decode_segmap(output_ab.cpu().numpy())
+                rgb_ba = decode_segmap(output_ba.cpu().numpy())
+
+                rgb_ab = Image.fromarray(rgb_ab).resize((x_a.size(3),x_a.size(3)))
+                rgb_ba = Image.fromarray(rgb_ba).resize((x_a.size(3),x_a.size(3)))
+
+                rgb_ab_list.append(transforms.ToTensor()(rgb_ab).unsqueeze(0))
+                rgb_ba_list.append(transforms.ToTensor()(rgb_ba).unsqueeze(0))
+                
+            rgb1_a,rgb1_b,rgb1_ab,rgb1_ba = torch.cat(rgb_a_list).cuda(),torch.cat(rgb_b_list).cuda(),\
+                                            torch.cat(rgb_ab_list).cuda(),torch.cat(rgb_ba_list).cuda()
+
         self.train()
-        return x_a, x_a_recon, x_ab1, x_ab2, x_b, x_b_recon, x_ba1, x_ba2
+        if self.semantic_w:
+            self.segmentation_model.eval()
+            return x_a, x_a_recon,rgb1_a, x_ab1, rgb1_ab, x_ab2, x_b, x_b_recon,rgb1_b, x_ba1,rgb1_ba,x_ba2
+        else:
+            return x_a, x_a_recon, x_ab1, x_ab2, x_b, x_b_recon, x_ba1, x_ba2
 
     def dis_update(self, x_a, x_b, hyperparameters,comet_exp=None):
         self.dis_opt.zero_grad()
@@ -229,15 +339,27 @@ class MUNIT_Trainer(nn.Module):
             c_a, _ = self.gen_a.encode(x_a)
             c_b, _ = self.gen_b.encode(x_b)
             # decode (cross domain)
-            x_ba = self.gen_a.decode(c_b, s_a)
-            x_ab = self.gen_b.decode(c_a, s_b)
+            if self.guided == 0 :
+                x_ba = self.gen_a.decode(c_b, s_a)
+                x_ab = self.gen_b.decode(c_a, s_b)
+            elif self.guided ==1:
+                x_ba = self.gen_a.decode(c_b, s_a_prime)
+                x_ab = self.gen_b.decode(c_a, s_b_prime)
+            else:
+                print('self.guided unknown value:',self.guided)
         elif self.gen_state==1:
             # encode
             c_a, _ = self.gen.encode(x_a,1)
             c_b, _ = self.gen.encode(x_b,2)
             # decode (cross domain)
-            x_ba = self.gen.decode(c_b, s_a,1)
-            x_ab = self.gen.decode(c_a, s_b,2)
+            if self.guided == 0 :
+                x_ba = self.gen.decode(c_b, s_a,1)
+                x_ab = self.gen.decode(c_a, s_b,2)
+            elif self.guided ==1:
+                x_ba = self.gen.decode(c_b, s_a_prime,1)
+                x_ab = self.gen.decode(c_a, s_b_prime,2)
+            else:
+                print('self.guided unknown value:',self.guided)
         else:
             print('self.gen_state unknown value:',self.gen_state) 
             

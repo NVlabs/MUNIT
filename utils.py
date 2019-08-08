@@ -3,12 +3,14 @@ Copyright (C) 2018 NVIDIA Corporation.  All rights reserved.
 Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode).
 """
 from torch.utils.serialization import load_lua
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader,Dataset
 from networks import Vgg16
 from torch.autograd import Variable
 from torch.optim import lr_scheduler
-from torchvision import transforms
+from torchvision import transforms, models
 from data import ImageFilelist, ImageFolder
+from PIL import Image
+from torchvision.transforms import functional as F
 import torch
 import torch.nn as nn
 import os
@@ -18,6 +20,7 @@ import yaml
 import numpy as np
 import torch.nn.init as init
 import time
+from resnet import resnet34
 # Methods
 # get_all_data_loaders      : primary data loader interface (load trainA, testA, trainB, testB)
 # get_data_loader_list      : list-based data loader
@@ -33,6 +36,7 @@ import time
 # get_slerp_interp
 # get_model_list
 # load_vgg16
+# load_flood_classifier
 # load_inception
 # vgg_preprocess
 # get_scheduler
@@ -69,7 +73,26 @@ def get_all_data_loaders(conf):
                                                 new_size_b, new_size_b, new_size_b, num_workers, True)
     return train_loader_a, train_loader_b, test_loader_a, test_loader_b
 
+def seg_transform():
+    segmentation_transform = transforms.Compose(
+            [
+                 transforms.Normalize((0.485, 0.456, 0.406),\
+                                      (0.229, 0.224, 0.225))
+            ])
+    return(segmentation_transform)
 
+def transform_torchVar():
+    transfo = transforms.Compose([
+                            transforms.ToPILImage(),
+                            transforms.Resize(256),
+                            transforms.CenterCrop(224),
+                            transforms.ToTensor(),
+                            transforms.Normalize([0.485, 0.456, 0.406],\
+                                                 [0.229, 0.224, 0.225])
+                            ])    
+    return(transfo)
+    
+    
 def get_data_loader_list(root, file_list, batch_size, train, new_size=None,
                            height=256, width=256, num_workers=4, crop=True):
     transform_list = [transforms.ToTensor(),
@@ -82,6 +105,87 @@ def get_data_loader_list(root, file_list, batch_size, train, new_size=None,
     dataset = ImageFilelist(root, file_list, transform=transform)
     loader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=train, drop_last=True, num_workers=num_workers)
     return loader
+
+def default_txt_reader(flist):
+    """
+    txt format: impath \n
+    """
+    imlist = []
+    with open(flist, 'r') as rf:
+        for line in rf.readlines():
+            impath = line.strip().split()
+            imlist.append(impath)
+    return imlist
+
+
+class MyDataset(Dataset):
+    def __init__(self, file_list, mask_list,new_size,height,width):
+        self.image_paths  = default_txt_reader(file_list)
+        self.target_paths = default_txt_reader(mask_list)
+        self.new_size     = new_size
+        self.height       = height
+        self.width        = width
+        
+    def transform(self, image, mask):
+        
+        #print('debugging mask transform 1 size',mask.size)
+        
+        # Random horizontal flipping
+        if torch.rand(1) > 0.5:
+            image = image.transpose(Image.FLIP_LEFT_RIGHT)
+            mask  = mask.transpose(Image.FLIP_LEFT_RIGHT)
+            
+        #print('debugging mask transform 2 size',mask.size)
+        # Resize
+        resize = transforms.Resize(size=self.new_size)
+        image  = resize(image)
+        #print('dim image after resize',image.size)
+        
+        # Resize mask
+        
+        mask        = mask.resize((image.width,image.height),Image.NEAREST)
+        
+        #print('debugging mask transform 3 size',mask.size)
+        # Random crop
+        i, j, h, w = transforms.RandomCrop.get_params(
+                        image, output_size=(self.height, self.width))
+        image      = F.crop(image, i, j, h, w)
+        mask       = F.crop(mask, i, j, h, w)
+        
+        #print('debugging mask transform 4 size',mask.size)
+        # Transform to tensor
+        to_tensor = transforms.ToTensor()
+        image = to_tensor(image)
+        
+        if np.max(mask) ==1:
+            mask  = to_tensor(mask) * 255 
+        else :
+            mask  = to_tensor(mask)
+        
+        # print('debugging mask transform 5 size',mask.size)       
+        # Normalize
+        normalizer = transforms.Normalize((0.5, 0.5, 0.5),
+                                           (0.5, 0.5, 0.5))
+        image = normalizer(image)
+        return image, mask
+
+    def __getitem__(self, index):
+        image = Image.open(self.image_paths[index][0]).convert('RGB')
+        mask  = Image.open(self.target_paths[index][0])
+        x, y  = self.transform(image, mask)
+        return x, y
+
+    def __len__(self):
+        return len(self.image_paths)
+
+def get_data_loader_mask_and_im(file_list, mask_list, batch_size, train, new_size=None,
+                           height=256, width=256, num_workers=4, crop=True):
+    
+    dataset    = MyDataset(file_list, mask_list,new_size,height,width)
+    loader     = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=train, drop_last=True, num_workers=num_workers)
+    return loader
+    
+    
 
 def get_data_loader_folder(input_folder, batch_size, train, new_size=None,
                            height=256, width=256, num_workers=4, crop=True):
@@ -163,7 +267,7 @@ def write_html(filename, iterations, image_save_iterations, image_directory, all
     write_one_row_html(html_file, iterations, '%s/gen_b2a_train_current.jpg' % (image_directory), all_size)
     for j in range(iterations, image_save_iterations-1, -1):
         if j % image_save_iterations == 0:
-            write_one_row_html(html_file, j, '%s/gen_a2b_test_%08d.jpg' % (image_directory, j), all_size)
+            wrseg_transformite_one_row_html(html_file, j, '%s/gen_a2b_test_%08d.jpg' % (image_directory, j), all_size)
             write_one_row_html(html_file, j, '%s/gen_b2a_test_%08d.jpg' % (image_directory, j), all_size)
             write_one_row_html(html_file, j, '%s/gen_a2b_train_%08d.jpg' % (image_directory, j), all_size)
             write_one_row_html(html_file, j, '%s/gen_b2a_train_%08d.jpg' % (image_directory, j), all_size)
@@ -235,6 +339,97 @@ def load_vgg16(model_dir):
     vgg = Vgg16()
     vgg.load_state_dict(torch.load(os.path.join(model_dir, 'vgg16.weight')))
     return vgg
+
+def load_flood_classifier(ckpt_path):
+    model = models.resnet18(pretrained=True)
+    num_ftrs = model.fc.in_features
+    model.fc = nn.Linear(num_ftrs, 2)
+    model.load_state_dict(torch.load(ckpt_path))
+    return model
+
+class Resnet34_8s(nn.Module):
+
+    def __init__(self, num_classes=1000):
+        super(Resnet34_8s, self).__init__()
+
+        # Load the pretrained weights, remove avg pool
+        # layer and get the output stride of 8
+        resnet34_8s = resnet34(fully_conv=True,
+                                      pretrained=True,
+                                      output_stride=8,
+                                      remove_avg_pool_layer=True)
+
+        # Randomly initialize the 1x1 Conv scoring layer
+        resnet34_8s.fc = nn.Conv2d(resnet34_8s.inplanes, num_classes, 1)
+
+        self.resnet34_8s = resnet34_8s
+
+        self._normal_initialization(self.resnet34_8s.fc)
+
+    def _normal_initialization(self, layer):
+        layer.weight.data.normal_(0, 0.01)
+        layer.bias.data.zero_()
+
+    def forward(self, x, feature_alignment=False):
+        input_spatial_dim = x.size()[2:]
+
+        if feature_alignment:
+            x = adjust_input_image_size_for_proper_feature_alignment(x, output_stride=8)
+
+        x = self.resnet34_8s(x)
+
+        x = nn.functional.upsample_bilinear(input=x, size=input_spatial_dim)
+
+        return x
+
+def load_segmentation_model(ckpt_path):
+    model = Resnet34_8s(num_classes=19).to('cuda')
+    model.load_state_dict(torch.load(ckpt_path))
+    return model
+
+
+# Define the helper function
+def decode_segmap(image,nc=19):
+    """Creates a label colormap used in CITYSCAPES segmentation benchmark.
+    Returns:
+    A colormap for visualizing segmentation results.
+    """
+    colormap = np.zeros((19, 3), dtype=np.uint8)
+    colormap[0] = [128, 64, 128]
+    colormap[1] = [244, 35, 232]
+    colormap[2] = [70, 70, 70]
+    colormap[3] = [102, 102, 156]
+    colormap[4] = [190, 153, 153]
+    colormap[5] = [153, 153, 153]
+    colormap[6] = [250, 170, 30]
+    colormap[7] = [220, 220, 0]
+    colormap[8] = [107, 142, 35]
+    colormap[9] = [152, 251, 152]
+    colormap[10] = [70, 130, 180]
+    colormap[11] = [220, 20, 60]
+    colormap[12] = [255, 0, 0]
+    colormap[13] = [0, 0, 142]
+    colormap[14] = [0, 0, 70]
+    colormap[15] = [0, 60, 100]
+    colormap[16] = [0, 80, 100]
+    colormap[17] = [0, 0, 230]
+    colormap[18] = [119, 11, 32]
+    
+    r = np.zeros_like(image).astype(np.uint8)
+    g = np.zeros_like(image).astype(np.uint8)
+    b = np.zeros_like(image).astype(np.uint8)
+
+    for l in range(nc):
+        idx = image == l
+        r[idx] = colormap[l, 0]
+        g[idx] = colormap[l, 1]
+        b[idx] = colormap[l, 2]
+
+    rgb = np.stack([r, g, b], axis=2)
+    return rgb
+
+
+
 
 def load_inception(model_path):
     state_dict = torch.load(model_path)

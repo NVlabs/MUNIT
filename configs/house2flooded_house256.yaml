@@ -25,8 +25,8 @@ recon_s_w: 1                  # weight of style reconstruction loss
 recon_c_w: 1                  # weight of content reconstruction loss
 recon_x_cyc_w: 10             # weight of explicit style augmented cycle consistency loss
 vgg_w: 0                      # weight of domain-invariant perceptual loss
-class_w: 0                    # weight of classif loss
-semantic_w: 0                 # weight of semantic conservation loss
+
+semantic_w: 1                 # weight of semantic conservation loss
 
 #classifier ckpt path: 
 class_ckpt_path: /network/home/cosnegau/ckpt_small/resnet-18-epoch24.pth
@@ -36,6 +36,8 @@ semantic_ckpt_path: /network/home/cosnegau/RoadSegmentation/resnet_34_8s_citysca
 
 # model options
 gen_state: 0                  # Default 0, 1 means using one common style encoder, 2 one autoencoder only
+guided: 0                     # Default 0 random style picked (multi modal), 1 means guided training
+
 
 gen:
   dim: 64                     # number of filters in the bottommost layer
