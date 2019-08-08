@@ -27,6 +27,8 @@ recon_x_cyc_w: 10             # weight of explicit style augmented cycle consist
 vgg_w: 0                      # weight of domain-invariant perceptual loss
 
 semantic_w: 1                 # weight of semantic conservation loss
+recon_mask: 1                 # default 0 do not touch recon loss, 1 do not compute cycle consistency loss on masked region
+
 
 #classifier ckpt path: 
 class_ckpt_path: /network/home/cosnegau/ckpt_small/resnet-18-epoch24.pth

@@ -20,6 +20,7 @@ class MUNIT_Trainer(nn.Module):
         self.guided     = hyperparameters['guided']
         self.newsize    = hyperparameters['new_size']
         self.semantic_w = hyperparameters['semantic_w']>0
+        self.recon_mask = hyperparameters['recon_mask']==0
         if self.gen_state == 0:
             # Initiate the networks
             self.gen_a = AdaINGen(hyperparameters['input_dim_a'], hyperparameters['gen'])  # auto-encoder for domain a
@@ -166,8 +167,15 @@ class MUNIT_Trainer(nn.Module):
         self.loss_gen_recon_s_b = self.recon_criterion(s_b_recon, s_b)
         self.loss_gen_recon_c_a = self.recon_criterion(c_a_recon, c_a)
         self.loss_gen_recon_c_b = self.recon_criterion(c_b_recon, c_b)
-        self.loss_gen_cycrecon_x_a = self.recon_criterion(x_aba, x_a) if hyperparameters['recon_x_cyc_w'] > 0 else 0
-        self.loss_gen_cycrecon_x_b = self.recon_criterion(x_bab, x_b) if hyperparameters['recon_x_cyc_w'] > 0 else 0
+        if self.recon_mask:
+            self.loss_gen_cycrecon_x_a = self.recon_criterion(x_aba, x_a) if hyperparameters['recon_x_cyc_w'] > 0 else 0
+            self.loss_gen_cycrecon_x_b = self.recon_criterion(x_bab, x_b) if hyperparameters['recon_x_cyc_w'] > 0 else 0
+        else:
+            self.loss_gen_cycrecon_x_a = self.recon_criterion_mask(x_aba, x_a,mask_a)\
+            if hyperparameters['recon_x_cyc_w'] > 0 else 0
+        self.loss_gen_cycrecon_x_b = self.recon_criterion_mask(x_bab, x_b,mask_b)\
+            if hyperparameters['recon_x_cyc_w'] > 0 else 0
+        
         # GAN loss
         self.loss_gen_adv_a = self.dis_a.calc_gen_loss(x_ba)
         self.loss_gen_adv_b = self.dis_b.calc_gen_loss(x_ab)
