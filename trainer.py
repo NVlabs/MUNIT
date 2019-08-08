@@ -88,7 +88,7 @@ class MUNIT_Trainer(nn.Module):
         self.train()
         return x_ab, x_ba
 
-    def gen_update(self, x_a, x_b, hyperparameters):
+    def gen_update(self, x_a, x_b, hyperparameters,comet_exp=None):
         self.gen_opt.zero_grad()
         s_a = Variable(torch.randn(x_a.size(0), self.style_dim, 1, 1).cuda())
         s_b = Variable(torch.randn(x_b.size(0), self.style_dim, 1, 1).cuda())
@@ -156,6 +156,23 @@ class MUNIT_Trainer(nn.Module):
                               hyperparameters['recon_x_cyc_w'] * self.loss_gen_cycrecon_x_b + \
                               hyperparameters['vgg_w'] * self.loss_gen_vgg_a + \
                               hyperparameters['vgg_w'] * self.loss_gen_vgg_b
+        
+        if comet_exp is not None:
+            comet_exp.log_metric("loss_gen_adv_a", self.loss_gen_adv_a)
+            comet_exp.log_metric("loss_gen_adv_b", self.loss_gen_adv_b)
+            comet_exp.log_metric("loss_gen_recon_x_a", self.loss_gen_recon_x_a)
+            comet_exp.log_metric("loss_gen_recon_s_a", self.loss_gen_recon_s_a)
+            comet_exp.log_metric("loss_gen_recon_c_a", self.loss_gen_recon_c_a)
+            comet_exp.log_metric("loss_gen_recon_x_b", self.loss_gen_recon_x_b)
+            comet_exp.log_metric("loss_gen_recon_s_b", self.loss_gen_recon_s_b)
+            comet_exp.log_metric("loss_gen_recon_c_b", self.loss_gen_recon_c_b)
+            comet_exp.log_metric("loss_gen_cycrecon_x_a", self.loss_gen_cycrecon_x_a)
+            comet_exp.log_metric("loss_gen_cycrecon_x_b", self.loss_gen_cycrecon_x_b)
+            comet_exp.log_metric("loss_gen_total", self.loss_gen_total)
+            if hyperparameters['vgg_w'] >0: 
+                comet_exp.log_metric("loss_gen_vgg_a", self.loss_gen_vgg_a)
+                comet_exp.log_metric("loss_gen_vgg_b", self.loss_gen_vgg_b)
+                
         self.loss_gen_total.backward()
         self.gen_opt.step()
 
@@ -203,7 +220,7 @@ class MUNIT_Trainer(nn.Module):
         self.train()
         return x_a, x_a_recon, x_ab1, x_ab2, x_b, x_b_recon, x_ba1, x_ba2
 
-    def dis_update(self, x_a, x_b, hyperparameters):
+    def dis_update(self, x_a, x_b, hyperparameters,comet_exp=None):
         self.dis_opt.zero_grad()
         s_a = Variable(torch.randn(x_a.size(0), self.style_dim, 1, 1).cuda())
         s_b = Variable(torch.randn(x_b.size(0), self.style_dim, 1, 1).cuda())
@@ -227,6 +244,11 @@ class MUNIT_Trainer(nn.Module):
         # D loss
         self.loss_dis_a = self.dis_a.calc_dis_loss(x_ba.detach(), x_a)
         self.loss_dis_b = self.dis_b.calc_dis_loss(x_ab.detach(), x_b)
+        
+        if comet_exp is not None:
+            comet_exp.log_metric("loss_dis_b", self.loss_dis_b)
+            comet_exp.log_metric("loss_dis_a", self.loss_dis_a)
+            
         self.loss_dis_total = hyperparameters['gan_w'] * self.loss_dis_a + hyperparameters['gan_w'] * self.loss_dis_b
         self.loss_dis_total.backward()
         self.dis_opt.step()

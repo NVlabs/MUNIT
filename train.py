@@ -27,6 +27,9 @@ parser.add_argument("--resume", action="store_true")
 parser.add_argument('--trainer', type=str, default='MUNIT', help="MUNIT|UNIT")
 opts = parser.parse_args()
 
+if comet_exp is not None:
+    comet_exp.log_asset(file_data=opts.config, file_name='config.yaml')
+    
 cudnn.benchmark = True
 
 # Load experiment setting
@@ -65,8 +68,8 @@ while True:
 
         with Timer("Elapsed time in update: %f"):
             # Main training code
-            trainer.dis_update(images_a, images_b, config)
-            trainer.gen_update(images_a, images_b, config)
+            trainer.dis_update(images_a, images_b, config,comet_exp)
+            trainer.gen_update(images_a, images_b, config,comet_exp)
             torch.cuda.synchronize()
 
         # Dump training stats in log file
