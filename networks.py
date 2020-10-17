@@ -66,6 +66,7 @@ class MsImageDis(nn.Module):
                                    F.binary_cross_entropy(F.sigmoid(out1), all1))
             else:
                 assert 0, "Unsupported GAN type: {}".format(self.gan_type)
+        print('dis loss', loss.data)
         return loss
 
     def calc_gen_loss(self, input_fake):
@@ -96,36 +97,43 @@ class AdaINGen(nn.Module):
         n_res = params['n_res']
         activ = params['activ']
         pad_type = params['pad_type']
-        mlp_dim = params['mlp_dim']
+        self.mlp_dim = params['mlp_dim']
+        self.style_dim = style_dim
 
         # style encoder
         self.enc_style = StyleEncoder(4, input_dim, dim, style_dim, norm='none', activ=activ, pad_type=pad_type)
 
         # content encoder
         self.enc_content = ContentEncoder(n_downsample, n_res, input_dim, dim, 'in', activ, pad_type=pad_type)
-        self.dec = Decoder(n_downsample, n_res, self.enc_content.output_dim, input_dim, res_norm='adain', activ=activ, pad_type=pad_type)
+        self.dec = Decoder(n_downsample, n_res, self.enc_content.output_dim, input_dim,
+                           self.style_dim, self.mlp_dim, res_norm='adain', activ=activ, pad_type=pad_type)
 
         # MLP to generate AdaIN parameters
-        self.mlp = MLP(style_dim, self.get_num_adain_params(self.dec), mlp_dim, 3, norm='none', activ=activ)
+        self.mlp1 = MLP(style_dim, self.get_num_adain_params(self.dec), self.mlp_dim, 3, norm='none', activ=activ)
+        self.mlp2 = MLP(style_dim, self.get_num_adain_params(self.dec), self.mlp_dim, 3, norm='none', activ=activ)
 
-    def forward(self, images):
+    def forward(self, images, masks):
         # reconstruct an image
-        content, style_fake = self.encode(images)
-        images_recon = self.decode(content, style_fake)
+        content, style_fg, style_bg = self.encode(images, masks)
+        images_recon = self.decode(content, style_fg, style_bg, masks)
         return images_recon
 
-    def encode(self, images):
+    def encode(self, images, masks):
         # encode an image to its content and style codes
-        style_fake = self.enc_style(images)
+        style_fg = self.enc_style(masks * images)
+        style_bg = self.enc_style((1-masks) * images, False)
         content = self.enc_content(images)
-        return content, style_fake
+        return content, style_fg, style_bg
 
-    def decode(self, content, style):
+    def decode(self, content, style_fg, style_bg, mask):
         # decode content and style codes to an image
-        adain_params = self.mlp(style)
-        self.assign_adain_params(adain_params, self.dec)
-        images = self.dec(content)
-        return images
+        adain_params1 = self.mlp1(style_fg)
+        adain_params2 = self.mlp2(style_bg)
+        self.assign_adain_params(adain_params1, self.dec)
+        images1 = self.dec(content, style_fg, style_bg, mask)
+        self.assign_adain_params(adain_params2, self.dec)
+        images2 = self.dec(content, style_bg, style_bg, mask)
+        return (mask * images1) + (1-mask) * images2
 
     def assign_adain_params(self, adain_params, model):
         # assign the adain_params to the AdaIN layers in model
@@ -148,7 +156,7 @@ class AdaINGen(nn.Module):
 
 
 class VAEGen(nn.Module):
-    # VAE architecture
+    # VAE architectureself
     def __init__(self, input_dim, params):
         super(VAEGen, self).__init__()
         dim = params['dim']
@@ -188,20 +196,30 @@ class VAEGen(nn.Module):
 class StyleEncoder(nn.Module):
     def __init__(self, n_downsample, input_dim, dim, style_dim, norm, activ, pad_type):
         super(StyleEncoder, self).__init__()
-        self.model = []
-        self.model += [Conv2dBlock(input_dim, dim, 7, 1, 3, norm=norm, activation=activ, pad_type=pad_type)]
+        self.shared = []
+        self.spec_layers = []
+        self.shared += [Conv2dBlock(input_dim, dim, 7, 1, 3, norm=norm, activation=activ, pad_type=pad_type)]
         for i in range(2):
-            self.model += [Conv2dBlock(dim, 2 * dim, 4, 2, 1, norm=norm, activation=activ, pad_type=pad_type)]
+            self.shared += [Conv2dBlock(dim, 2 * dim, 4, 2, 1, norm=norm, activation=activ, pad_type=pad_type)]
             dim *= 2
         for i in range(n_downsample - 2):
-            self.model += [Conv2dBlock(dim, dim, 4, 2, 1, norm=norm, activation=activ, pad_type=pad_type)]
-        self.model += [nn.AdaptiveAvgPool2d(1)] # global average pooling
-        self.model += [nn.Conv2d(dim, style_dim, 1, 1, 0)]
-        self.model = nn.Sequential(*self.model)
+            self.spec_layers += [Conv2dBlock(dim, dim, 4, 2, 1, norm=norm, activation=activ, pad_type=pad_type)]
+        self.spec_layers = [nn.AdaptiveAvgPool2d(1)] # global average pooling
+        self.spec_layers += [nn.Conv2d(dim, style_dim, 1, 1, 0)]
+
+        self.shared = nn.Sequential(*self.shared)
+        self.foreground = nn.Sequential(*self.spec_layers)
+        self.background = nn.Sequential(*self.spec_layers)
+
         self.output_dim = dim
 
-    def forward(self, x):
-        return self.model(x)
+    def forward(self, x, isF=True):
+        x = self.shared(x)
+        if isF:
+            return self.foreground(x)
+        else:
+            return self.background(x)
+
 
 class ContentEncoder(nn.Module):
     def __init__(self, n_downsample, n_res, input_dim, dim, norm, activ, pad_type):
@@ -220,13 +238,14 @@ class ContentEncoder(nn.Module):
     def forward(self, x):
         return self.model(x)
 
+
 class Decoder(nn.Module):
-    def __init__(self, n_upsample, n_res, dim, output_dim, res_norm='adain', activ='relu', pad_type='zero'):
+    def __init__(self, n_upsample, n_res, dim, output_dim, style_dim, mlp_dim, res_norm='adain', activ='relu', pad_type='zero'):
         super(Decoder, self).__init__()
 
         self.model = []
         # AdaIN residual blocks
-        self.model += [ResBlocks(n_res, dim, res_norm, activ, pad_type=pad_type)]
+        self.model += [ResBlocks(n_res, dim, 'adain', activ, pad_type=pad_type)]
         # upsampling blocks
         for i in range(n_upsample):
             self.model += [nn.Upsample(scale_factor=2),
@@ -236,8 +255,9 @@ class Decoder(nn.Module):
         self.model += [Conv2dBlock(dim, output_dim, 7, 1, 3, norm='none', activation='tanh', pad_type=pad_type)]
         self.model = nn.Sequential(*self.model)
 
-    def forward(self, x):
-        return self.model(x)
+    def forward(self, c_A, s_fB, s_bA, m_A):
+        return self.model(c_A)
+
 
 ##################################################################################
 # Sequential Models
