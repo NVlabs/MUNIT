@@ -24,7 +24,7 @@ parser.add_argument("--resume", action="store_true")
 parser.add_argument('--trainer', type=str, default='MUNIT', help="MUNIT|UNIT")
 opts = parser.parse_args()
 
-cudnn.benchmark = True
+cudnn.benchmark = False
 
 # Load experiment setting
 config = get_config(opts.config)
